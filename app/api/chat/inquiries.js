@@ -77,8 +77,8 @@ export async function saveInquiry({
   const totalContract = totalYearly * rentalYears;
 
   // ── Save to Postgres ──
-  const pool = getPool();
   try {
+    const pool = getPool();
     const { rows } = await pool.query(
       `INSERT INTO inquiries
         (company_name, company_address, contact_number, email, purposes, usage_level,

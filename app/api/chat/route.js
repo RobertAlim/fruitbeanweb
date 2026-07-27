@@ -114,6 +114,23 @@ that our team will follow up to complete the account setup manually.
 
 `.trim();
 
+// Wraps a tool's execute function so any thrown error (bugs, network
+// failures, etc.) becomes a normal { success: false } result instead of
+// an unhandled exception that kills the stream mid-response.
+function safe(execute) {
+  return async (...args) => {
+    try {
+      return await execute(...args);
+    } catch (err) {
+      console.error('🔴 Tool execute error:', err);
+      return {
+        success: false,
+        message: 'Something went wrong on our end — please try again.',
+      };
+    }
+  };
+}
+
 export async function POST(req) {
   try {
     const { messages } = await req.json();
@@ -132,10 +149,10 @@ export async function POST(req) {
           inputSchema: z.object({
             usageLevel: z.enum(['Light', 'Moderate', 'Heavy', 'Very Heavy']),
           }),
-          execute: async ({ usageLevel }) => {
+          execute: safe(async ({ usageLevel }) => {
             const printers = getRecommendedPrinters(usageLevel);
             return { printers };
-          },
+          }),
         }),
         saveInquiry: tool({
           description:
@@ -152,7 +169,7 @@ export async function POST(req) {
               .array(z.object({ model: z.string(), quantity: z.number().int().min(1) }))
               .min(1),
           }),
-          execute: async (args) => {
+          execute: safe(async (args) => {
             return saveInquiry({
               companyName: args.companyName,
               contactNumber: args.contactNumber,
@@ -163,7 +180,7 @@ export async function POST(req) {
               rentalYears: args.rentalPeriodYears,
               selectedPrinters: args.printers,
             });
-          },
+          }),
         }),
 
         createClientAccount: tool({
@@ -172,7 +189,7 @@ export async function POST(req) {
           inputSchema: z.object({
             inquiryId: z.number().int(),
           }),
-          execute: createClientAccount,
+          execute: safe(createClientAccount),
         }),
 
         sendWelcomeEmail: tool({
@@ -183,7 +200,7 @@ export async function POST(req) {
             companyName: z.string(),
             plainPassword: z.string(),
           }),
-          execute: sendWelcomeEmail,
+          execute: safe(sendWelcomeEmail),
         }),
       },
       stopWhen: stepCountIs(5),

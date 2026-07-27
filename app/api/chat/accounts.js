@@ -8,47 +8,76 @@ function generateTempPassword() {
 }
 
 export async function createClientAccount({ inquiryId }) {
-  const pool = getPool();
+  // ── 1. Get pool ──────────────────────────────────────────────────────────
+  let pool;
+  try {
+    pool = getPool();
+  } catch (err) {
+    console.error('createClientAccount: failed to get DB pool:', err);
+    return { success: false, message: 'Database connection unavailable.' };
+  }
 
-  const { rows: inquiryRows } = await pool.query(
-    'SELECT * FROM inquiries WHERE inquiry_id = $1',
-    [inquiryId]
-  );
-  const inquiry = inquiryRows[0];
+  // ── 2. Fetch the inquiry ─────────────────────────────────────────────────
+  let inquiry;
+  try {
+    const { rows } = await pool.query(
+      'SELECT * FROM inquiries WHERE inquiry_id = $1',
+      [inquiryId]
+    );
+    inquiry = rows[0];
+  } catch (err) {
+    console.error('createClientAccount: failed to fetch inquiry:', err);
+    return { success: false, message: 'Failed to look up inquiry.' };
+  }
 
   if (!inquiry) {
     return { success: false, message: 'No inquiry found with that ID.' };
   }
 
-  // Idempotency check #1 — this exact inquiry already has a linked account
+  // ── 3. Idempotency check #1 — inquiry already linked to a client ─────────
   if (inquiry.client_id) {
-    const { rows: existing } = await pool.query(
-      'SELECT client_id, email, company_name FROM clients WHERE client_id = $1',
-      [inquiry.client_id]
-    );
-    return {
-      success: true,
-      alreadyExisted: true,
-      clientId: existing[0].client_id,
-      email: existing[0].email,
-      companyName: existing[0].company_name,
-    };
+    try {
+      const { rows } = await pool.query(
+        'SELECT client_id, email, company_name FROM clients WHERE client_id = $1',
+        [inquiry.client_id]
+      );
+      return {
+        success: true,
+        alreadyExisted: true,
+        clientId: rows[0].client_id,
+        email: rows[0].email,
+        companyName: rows[0].company_name,
+      };
+    } catch (err) {
+      console.error('createClientAccount: failed to fetch existing client:', err);
+      return { success: false, message: 'Failed to look up existing client.' };
+    }
   }
 
-  // Idempotency check #2 — a client with this email already exists from a
-  // different (e.g. retried/duplicate) inquiry. Reuse that account instead
-  // of crashing on the unique email constraint.
-  const { rows: existingByEmail } = await pool.query(
-    'SELECT client_id, email, company_name FROM clients WHERE email = $1',
-    [inquiry.email]
-  );
+  // ── 4. Idempotency check #2 — same email from a different inquiry ─────────
+  let existingByEmail;
+  try {
+    const { rows } = await pool.query(
+      'SELECT client_id, email, company_name FROM clients WHERE email = $1',
+      [inquiry.email]
+    );
+    existingByEmail = rows;
+  } catch (err) {
+    console.error('createClientAccount: failed to check existing email:', err);
+    return { success: false, message: 'Failed to check for existing account.' };
+  }
 
   if (existingByEmail.length > 0) {
     const existingClient = existingByEmail[0];
-    await pool.query(
-      `UPDATE inquiries SET client_id = $1, status = 'converted' WHERE inquiry_id = $2`,
-      [existingClient.client_id, inquiryId]
-    );
+    try {
+      await pool.query(
+        `UPDATE inquiries SET client_id = $1, status = 'converted' WHERE inquiry_id = $2`,
+        [existingClient.client_id, inquiryId]
+      );
+    } catch (err) {
+      console.error('createClientAccount: failed to link existing client to inquiry:', err);
+      return { success: false, message: 'Failed to link existing account to inquiry.' };
+    }
     return {
       success: true,
       alreadyExisted: true,
@@ -58,10 +87,18 @@ export async function createClientAccount({ inquiryId }) {
     };
   }
 
+  // ── 5. Create new client + rentals in a transaction ──────────────────────
   const plainPassword = generateTempPassword();
   const hashedPassword = await bcrypt.hash(plainPassword, 10);
 
-  const client = await pool.connect();
+  let client;
+  try {
+    client = await pool.connect();
+  } catch (err) {
+    console.error('createClientAccount: failed to acquire DB client:', err);
+    return { success: false, message: 'Database connection unavailable.' };
+  }
+
   try {
     await client.query('BEGIN');
 

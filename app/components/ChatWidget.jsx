@@ -1,4 +1,5 @@
 "use client";
+
 import { useState, useRef, useEffect } from "react";
 import "./chatwidget.css";
 
@@ -12,7 +13,9 @@ export default function ChatWidget() {
 	]);
 	const [input, setInput] = useState("");
 	const [sending, setSending] = useState(false);
+
 	const scrollRef = useRef(null);
+	const textareaRef = useRef(null);
 
 	useEffect(() => {
 		scrollRef.current?.scrollTo({
@@ -21,24 +24,39 @@ export default function ChatWidget() {
 		});
 	}, [messages, open]);
 
+	useEffect(() => {
+		const el = textareaRef.current;
+		if (!el) return;
+
+		el.style.height = "auto";
+		el.style.height = Math.min(el.scrollHeight, 100) + "px";
+	}, [input]);
+
 	async function handleSend(e) {
 		e.preventDefault();
+
 		const text = input.trim();
 		if (!text || sending) return;
 
 		const userMessage = { role: "user", text };
 		const updatedMessages = [...messages, userMessage];
+
+		// Show typing indicator immediately
 		setMessages([...updatedMessages, { role: "bot", text: "" }]);
 		setInput("");
 		setSending(true);
 
 		try {
 			const res = await fetch(
-				"https://fruitbeanweb.vercel.app/webhook/fruitbean-chat",
+				"https://fruitbean.app.n8n.cloud/webhook/fruitbean-chat",
 				{
 					method: "POST",
-					headers: { "Content-Type": "application/json" },
-					body: JSON.stringify({ messages: updatedMessages }),
+					headers: {
+						"Content-Type": "application/json",
+					},
+					body: JSON.stringify({
+						messages: updatedMessages,
+					}),
 				},
 			);
 
@@ -48,9 +66,13 @@ export default function ChatWidget() {
 			}
 
 			const data = await res.json();
+
 			setMessages((prev) => {
 				const next = [...prev];
-				next[next.length - 1] = { role: "bot", text: data.reply };
+				next[next.length - 1] = {
+					role: "bot",
+					text: data.reply,
+				};
 				return next;
 			});
 		} catch (err) {
@@ -66,14 +88,7 @@ export default function ChatWidget() {
 			setSending(false);
 		}
 	}
-	const textareaRef = useRef(null);
 
-	useEffect(() => {
-		const el = textareaRef.current;
-		if (!el) return;
-		el.style.height = "auto";
-		el.style.height = Math.min(el.scrollHeight, 100) + "px";
-	}, [input]);
 	return (
 		<div className="chatwidget-root">
 			{open && (
@@ -88,13 +103,17 @@ export default function ChatWidget() {
 								className="chatwidget-droplet chatwidget-droplet--sm"
 								aria-hidden="true"
 							></span>
+
 							<div>
-								<div className="chatwidget-title">Fruitbean Assistant</div>
+								<div className="chatwidget-title">
+									Fruitbean Assistant
+								</div>
 								<div className="chatwidget-subtitle">
 									Usually replies in a minute
 								</div>
 							</div>
 						</div>
+
 						<button
 							className="chatwidget-close"
 							onClick={() => setOpen(false)}
@@ -108,7 +127,11 @@ export default function ChatWidget() {
 						{messages.map((m, i) => {
 							const isLast = i === messages.length - 1;
 							const isEmptyBotTyping =
-								m.role === "bot" && m.text === "" && isLast && sending;
+								m.role === "bot" &&
+								m.text === "" &&
+								isLast &&
+								sending;
+
 							return (
 								<div
 									key={i}
@@ -120,6 +143,7 @@ export default function ChatWidget() {
 											aria-hidden="true"
 										></span>
 									)}
+
 									<div
 										className={`chatwidget-bubble chatwidget-bubble--${m.role}`}
 									>
@@ -138,8 +162,12 @@ export default function ChatWidget() {
 						})}
 					</div>
 
-					<form className="chatwidget-inputbar" onSubmit={handleSend}>
+					<form
+						className="chatwidget-inputbar"
+						onSubmit={handleSend}
+					>
 						<textarea
+							ref={textareaRef}
 							value={input}
 							onChange={(e) => setInput(e.target.value)}
 							onKeyDown={(e) => {
@@ -147,12 +175,13 @@ export default function ChatWidget() {
 									e.preventDefault();
 									handleSend(e);
 								}
-								// Shift+Enter falls through to default behavior — inserts a newline
+								// Shift+Enter inserts a newline
 							}}
 							placeholder="Ask about renting a printer…"
 							aria-label="Type a message"
 							rows={1}
 						/>
+
 						<button
 							type="submit"
 							disabled={!input.trim() || sending}
@@ -173,7 +202,10 @@ export default function ChatWidget() {
 					className="chatwidget-droplet chatwidget-droplet--lg"
 					aria-hidden="true"
 				></span>
-				{!open && <span className="chatwidget-toggle-badge">1</span>}
+
+				{!open && (
+					<span className="chatwidget-toggle-badge">1</span>
+				)}
 			</button>
 		</div>
 	);

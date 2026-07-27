@@ -55,6 +55,7 @@ export default function LoginPage() {
   }
 
   return (
+    <div className="login-page">
     <div className="page-wrap">
 
       {/* Left Panel */}
@@ -157,6 +158,7 @@ export default function LoginPage() {
           Need admin access? <a href="/admin-signup" className="link">Request an admin account</a>
         </p>
       </div>
+    </div>
     </div>
   );
 }

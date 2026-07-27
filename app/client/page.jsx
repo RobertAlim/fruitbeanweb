@@ -255,7 +255,7 @@ export default function ClientPage() {
   );
 
   return (
-    <>
+    <div className="client-page">
       {/* ── Header ── */}
       <header className="client-header">
         <a href="/" className="header-logo">
@@ -693,6 +693,6 @@ export default function ClientPage() {
       {showChangePassword && (
         <ChangePasswordModal clientId={clientId} onClose={() => setShowChangePassword(false)} />
       )}
-    </>
+    </div>
   );
 }

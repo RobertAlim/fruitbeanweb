@@ -54,6 +54,11 @@ export default function AdminPage() {
   const [extendTypedConfirm, setExtendTypedConfirm] = useState('');
   const [extendError, setExtendError]               = useState('');
   const [extendSubmitting, setExtendSubmitting]     = useState(false);
+  const [deleteTarget, setDeleteTarget]             = useState(null);
+  const [deleteStep, setDeleteStep]                 = useState(1);
+  const [deleteTypedConfirm, setDeleteTypedConfirm] = useState('');
+  const [deleteError, setDeleteError]               = useState('');
+  const [deleteSubmitting, setDeleteSubmitting]     = useState(false);
 
   /* ── Auth + fetch ── */
   useEffect(() => {
@@ -367,6 +372,45 @@ export default function AdminPage() {
     finally { setExtendSubmitting(false); }
   }
 
+  /* ── Delete client popup (2-step: warning → type to confirm) ── */
+  function openDeleteModal(client) {
+    setDeleteTarget(client);
+    setDeleteStep(1);
+    setDeleteTypedConfirm('');
+    setDeleteError('');
+  }
+  function closeDeleteModal() { setDeleteTarget(null); }
+
+  function goToDeleteStep2() {
+    setDeleteError('');
+    setDeleteStep(2);
+  }
+
+  async function confirmDelete() {
+    if (deleteTypedConfirm.trim() !== deleteTarget.company_name) {
+      setDeleteError('That doesn\'t match the company name. Type it exactly to continue.');
+      return;
+    }
+    setDeleteSubmitting(true); setDeleteError('');
+    try {
+      const res = await fetch('/api/admin/clients', {
+        method:  'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body:    JSON.stringify({ client_id: deleteTarget.client_id, confirm: true }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Failed to delete client');
+      setClients(prev => prev.filter(c => c.client_id !== deleteTarget.client_id));
+      if (detailTarget?.client_id === deleteTarget.client_id) closeDetail();
+      closeDeleteModal();
+    } catch (err) {
+      console.error(err);
+      setDeleteError(err.message || 'Something went wrong. Please try again.');
+    } finally {
+      setDeleteSubmitting(false);
+    }
+  }
+
   /* ── Edit company ── */
   function openEdit(client) {
     setEditTarget(client);
@@ -471,7 +515,7 @@ export default function AdminPage() {
 
   /* ════════════════════════════════ RENDER ════════════════════════════════ */
   return (
-    <>
+    <div className="admin-page">
       {/* ── Header ── */}
       <header className="admin-header">
         <a href="/" className="header-logo">
@@ -644,6 +688,13 @@ export default function AdminPage() {
                       onClick={e => { e.stopPropagation(); openEdit(client); }}
                     >
                       ✏️ Edit
+                    </button>
+                    <button
+                      className="btn-secondary btn-danger-outline"
+                      style={{ padding: '6px 12px', fontSize: '12px' }}
+                      onClick={e => { e.stopPropagation(); openDeleteModal(client); }}
+                    >
+                      🗑️ Delete
                     </button>
                     <span className={`expand-arrow${isExpanded ? ' open' : ''}`}>▼</span>
                   </div>
@@ -955,6 +1006,13 @@ export default function AdminPage() {
             </div>
             <div className="modal-footer">
               <button className="btn-cancel" onClick={closeDetail}>Close</button>
+              <button
+                className="btn-report"
+                style={{ background: 'var(--red)' }}
+                onClick={() => { closeDetail(); openDeleteModal(detailTarget); }}
+              >
+                🗑️ Delete Client
+              </button>
               <button
                 className="btn-report"
                 style={{ background: '#475569' }}
@@ -1503,10 +1561,90 @@ export default function AdminPage() {
         </div>
       )}
 
+      {/* ── Delete Client Modal ── */}
+      {deleteTarget && (
+        <div className="modal-overlay" onClick={e => { if (e.target === e.currentTarget) closeDeleteModal(); }}>
+          <div className="modal-box resolve-modal-box">
+            <div className="modal-header">
+              <div className="modal-header-title">
+                <h2>🗑️ Delete Client</h2>
+                <p>
+                  {deleteStep === 1 && 'Step 1 of 2 — read this before continuing'}
+                  {deleteStep === 2 && 'Step 2 of 2 — final confirmation'}
+                </p>
+              </div>
+              <button className="modal-close" onClick={closeDeleteModal}>✕</button>
+            </div>
+            <div className="modal-printer-preview">
+              <span className="preview-icon">🏢</span>
+              <div>
+                <div className="preview-model">{deleteTarget.company_name}</div>
+                <div className="preview-label">{deleteTarget.email}</div>
+              </div>
+            </div>
+
+            <div className="modal-body">
+              {/* ── Step 1: warning ── */}
+              {deleteStep === 1 && (
+                <>
+                  <div className="modal-section-label">This Cannot Be Undone</div>
+                  <div className="extend-warning-box">
+                    ⚠️ Deleting <strong>{deleteTarget.company_name}</strong> will permanently remove their account
+                    and every rental record tied to it ({(deleteTarget.rentals ?? []).length} total). They will
+                    immediately lose access and this cannot be recovered. Only proceed if you're certain.
+                  </div>
+                  {deleteError && <div className="resolve-error">{deleteError}</div>}
+                </>
+              )}
+
+              {/* ── Step 2: type to confirm ── */}
+              {deleteStep === 2 && (
+                <>
+                  <div className="modal-section-label">Confirm Deletion</div>
+                  <p style={{ fontSize: '13px', color: 'var(--gray-600)', lineHeight: 1.5, margin: '0 0 10px' }}>
+                    Type the company name <strong>{deleteTarget.company_name}</strong> below to confirm you want to
+                    permanently delete this client and all of its rental history.
+                  </p>
+                  <input
+                    type="text"
+                    className="modal-notes"
+                    style={{ minHeight: 'unset', resize: 'none' }}
+                    placeholder={`Type "${deleteTarget.company_name}" here`}
+                    value={deleteTypedConfirm}
+                    onChange={e => { setDeleteTypedConfirm(e.target.value); setDeleteError(''); }}
+                    autoFocus
+                  />
+                  {deleteError && <div className="resolve-error">{deleteError}</div>}
+                </>
+              )}
+            </div>
+
+            <div className="modal-footer">
+              <button className="btn-cancel" onClick={closeDeleteModal}>Cancel</button>
+              {deleteStep === 1 && (
+                <button className="btn-report" onClick={goToDeleteStep2} style={{ background: 'var(--red)' }}>
+                  Continue →
+                </button>
+              )}
+              {deleteStep === 2 && (
+                <button
+                  className="btn-report"
+                  onClick={confirmDelete}
+                  disabled={deleteSubmitting}
+                  style={{ background: 'var(--red)' }}
+                >
+                  {deleteSubmitting ? 'Deleting…' : '🗑️ Yes, Delete Client'}
+                </button>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* ── Change Password Modal ── */}
       {showChangePassword && (
         <ChangePasswordModal clientId={adminClientId} onClose={() => setShowChangePassword(false)} />
       )}
-    </>
+    </div>
   );
 }

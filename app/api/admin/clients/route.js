@@ -89,12 +89,16 @@ export async function GET(req) {
 }
 
 // DELETE /api/admin/clients
-// Body: { client_id }
-// Only allowed for pending admin requests (account_type = 'admin' AND
-// account_status = false) — this is strictly for rejecting signup requests,
-// never for deleting active clients or admins.
+// Body shape A: { client_id }
+//   Rejects a pending admin signup request (account_type = 'admin' AND
+//   account_status = false). Unchanged, existing behavior.
+// Body shape B: { client_id, confirm: true }
+//   Permanently deletes an approved client account (account_type = 'client')
+//   along with all of its rentals. Requires confirm === true so this can
+//   never be triggered by an accidental/legacy call. Admin accounts can
+//   never be deleted through this endpoint.
 export async function DELETE(req) {
-  const { client_id } = await req.json();
+  const { client_id, confirm } = await req.json();
 
   if (!client_id) {
     return Response.json({ error: 'client_id is required.' }, { status: 400 });
@@ -108,6 +112,40 @@ export async function DELETE(req) {
     if (check.length === 0) {
       return Response.json({ error: 'Client not found.' }, { status: 404 });
     }
+
+    // ── Shape B: full client deletion ───────────────────────────────────────
+    if (confirm === true) {
+      if (check[0].account_type !== 'client') {
+        return Response.json(
+          { error: 'Admin accounts cannot be deleted through this action.' },
+          { status: 403 }
+        );
+      }
+
+      const dbClient = await pool.connect();
+      try {
+        await dbClient.query('BEGIN');
+        // Detach any inquiries that were converted into this client, so the
+        // FK on inquiries.client_id doesn't block deletion. We keep the
+        // inquiry record for history but null out the link.
+        await dbClient.query('UPDATE inquiries SET client_id = NULL WHERE client_id = $1', [client_id]);
+        await dbClient.query('DELETE FROM rentals WHERE client_id = $1', [client_id]);
+        const { rowCount } = await dbClient.query('DELETE FROM clients WHERE client_id = $1', [client_id]);
+        await dbClient.query('COMMIT');
+
+        if (rowCount === 0) {
+          return Response.json({ error: 'Client not found.' }, { status: 404 });
+        }
+        return Response.json({ ok: true }, { status: 200 });
+      } catch (err) {
+        await dbClient.query('ROLLBACK');
+        throw err;
+      } finally {
+        dbClient.release();
+      }
+    }
+
+    // ── Shape A: reject a pending admin signup request ──────────────────────
     if (check[0].account_type !== 'admin' || check[0].account_status !== false) {
       return Response.json(
         { error: 'Only pending (unapproved) admin requests can be rejected this way.' },
@@ -119,7 +157,7 @@ export async function DELETE(req) {
     return Response.json({ ok: true }, { status: 200 });
   } catch (err) {
     console.error('DB error:', err);
-    return Response.json({ error: 'Failed to reject request.' }, { status: 500 });
+    return Response.json({ error: 'Failed to delete.' }, { status: 500 });
   }
 }
 

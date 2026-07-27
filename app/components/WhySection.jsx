@@ -16,34 +16,35 @@ export default function WhySection() {
       <div className="left">
         <p className="section-label reveal">Why Fruitbean</p>
         <h2 className="section-title reveal">Quality you can<br />count on.</h2>
-        <p className="section-subtitle reveal">Since 2015, Fruitbean Ink Refilling Station has been providing reliable, affordable, and high-quality ink refilling services to customers from both the North and South, serving schools, offices, and businesses.</p>
+        <p className="section-subtitle reveal">Renting a printer shouldn't mean gambling on service you can't count on. 
+          At Fruitbean, we handle the ink, the maintenance, and the headaches — so you can just print. Here's what you get when you rent with us.</p>
         <div className="why-grid">
           <div className="why-item reveal">
             <span className="why-item-icon">⚡</span>
             <div>
               <h4>Fast Service</h4>
-              <p>Lorem ipsum dolor sit amet, consectetur adipiscing elit. Morbi tincidunt pulvinar tellus, nec ultrices eros blandit eu.</p>
+              <p>We know a stuck printer means stuck work. Our technicians respond quickly and get you back up and running with minimal downtime, whether it's a quick fix or a full unit swap.</p>
             </div>
           </div>
           <div className="why-item reveal">
             <span className="why-item-icon">💧</span>
             <div>
               <h4>Quality Inks</h4>
-              <p>Lorem ipsum dolor sit amet, consectetur adipiscing elit. Morbi tincidunt pulvinar tellus, nec ultrices eros blandit eu.</p>
+              <p>Every refill uses genuine, high-yield ink built for consistent, professional output. No streaks, no faded pages — just clean prints your documents and clients can count on."</p>
             </div>
           </div>
           <div className="why-item reveal">
             <span className="why-item-icon">💸</span>
             <div>
               <h4>Affordable</h4>
-              <p>Lorem ipsum dolor sit amet, consectetur adipiscing elit. Morbi tincidunt pulvinar tellus, nec ultrices eros blandit eu.</p>
+              <p>Skip the upfront cost of buying a printer outright. One predictable monthly rate covers your unit, ink, and support — so you can budget with confidence and scale up as you grow.</p>
             </div>
           </div>
           <div className="why-item reveal">
             <span className="why-item-icon">🛡️</span>
             <div>
               <h4>Guaranteed</h4>
-              <p>Lorem ipsum dolor sit amet, consectetur adipiscing elit. Morbi tincidunt pulvinar tellus, nec ultrices eros blandit eu.</p>
+              <p>Every rental includes free repairs, replacements, and refills for as long as you're with us. If something goes wrong, it's on us to fix it — not an extra bill for you.</p>
             </div>
           </div>
         </div>

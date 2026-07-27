@@ -15,56 +15,48 @@ export default function ChatWidget() {
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: 'smooth' });
   }, [messages, open]);
 
-  async function handleSend(e) {
-    e.preventDefault();
-    const text = input.trim();
-    if (!text || sending) return;
+async function handleSend(e) {
+  e.preventDefault();
+  const text = input.trim();
+  if (!text || sending) return;
 
-    const userMessage = { role: 'user', text };
-    const updatedMessages = [...messages, userMessage];
-    setMessages([...updatedMessages, { role: 'bot', text: '' }]);
-    setInput('');
-    setSending(true);
+  const userMessage = { role: 'user', text };
+  const updatedMessages = [...messages, userMessage];
+  setMessages([...updatedMessages, { role: 'bot', text: '' }]);
+  setInput('');
+  setSending(true);
 
-    try {
-      const res = await fetch('/api/chat', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ messages: updatedMessages }),
-      });
+  try {
+    const res = await fetch('http://localhost:5678/webhook/fruitbean-chat', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ messages: updatedMessages }),
+    });
 
-      if (!res.ok) {
-        const errData = await res.json().catch(() => ({}));
-        throw new Error(errData.error || `Request failed (${res.status})`);
-      }
-
-      const reader = res.body.getReader();
-      const decoder = new TextDecoder();
-      let fullText = '';
-
-      while (true) {
-        const { done, value } = await reader.read();
-        if (done) break;
-        fullText += decoder.decode(value, { stream: true });
-        setMessages(prev => {
-          const next = [...prev];
-          next[next.length - 1] = { role: 'bot', text: fullText };
-          return next;
-        });
-      }
-    } catch (err) {
-      setMessages(prev => {
-        const next = [...prev];
-        next[next.length - 1] = {
-          role: 'bot',
-          text: `⚠️ ${err.message || "Sorry, I couldn't connect right now."}`,
-        };
-        return next;
-      });
-    } finally {
-      setSending(false);
+    if (!res.ok) {
+      const errData = await res.json().catch(() => ({}));
+      throw new Error(errData.error || `Request failed (${res.status})`);
     }
+
+    const data = await res.json();
+    setMessages(prev => {
+      const next = [...prev];
+      next[next.length - 1] = { role: 'bot', text: data.reply };
+      return next;
+    });
+  } catch (err) {
+    setMessages(prev => {
+      const next = [...prev];
+      next[next.length - 1] = {
+        role: 'bot',
+        text: `⚠️ ${err.message || "Sorry, I couldn't connect right now."}`,
+      };
+      return next;
+    });
+  } finally {
+    setSending(false);
   }
+}
       const textareaRef = useRef(null);
 
       useEffect(() => {

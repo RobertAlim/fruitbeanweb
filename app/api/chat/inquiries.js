@@ -5,6 +5,7 @@ const VALID_USAGE_LEVELS = ['Light', 'Moderate', 'Heavy', 'Very Heavy'];
 
 export async function saveInquiry({
   companyName,
+  companyAddress,
   contactNumber,
   email,
   purposes,
@@ -16,6 +17,9 @@ export async function saveInquiry({
   // ── Validate (mirrors your old form's validate() function) ──
   if (!companyName?.trim()) {
     return { success: false, message: 'Company name is missing.' };
+  }
+  if (!companyAddress?.trim()) {
+    return { success: false, message: 'Company address is missing.' };
   }
   if (!contactNumber?.trim()) {
     return { success: false, message: 'Contact number is missing.' };
@@ -77,13 +81,14 @@ export async function saveInquiry({
   try {
     const { rows } = await pool.query(
       `INSERT INTO inquiries
-        (company_name, contact_number, email, purposes, usage_level,
+        (company_name, company_address, contact_number, email, purposes, usage_level,
          printer_count, rental_years, selected_printers,
          total_monthly, total_yearly, total_contract)
-       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12)
        RETURNING inquiry_id`,
       [
         companyName.trim(),
+        companyAddress.trim(),
         contactNumber.trim(),
         email.trim(),
         purposes,

@@ -1,0 +1,117 @@
+/* ═══════════════════════════════════════
+   ContractTimer — shared component styles
+   ═══════════════════════════════════════ */
+
+/* ── Full version ── */
+.ct-wrap {
+  margin-top: 10px;
+  padding: 10px 12px;
+  border-radius: 8px;
+  border: 1.5px solid;
+}
+
+.ct-wrap.ct-ok       { background: #f0fdf4; border-color: #86efac; }
+.ct-wrap.ct-warning  { background: #fffbeb; border-color: #fcd34d; }
+.ct-wrap.ct-critical { background: #fff1f2; border-color: #fca5a5; }
+.ct-wrap.ct-expired  { background: #f8f9fa; border-color: #e8eaed; }
+
+.ct-dates-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.ct-date-block {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+
+.ct-date-label {
+  font-size: 9.5px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.6px;
+  color: #9aa0a6;
+}
+
+.ct-date-val {
+  font-size: 12px;
+  font-weight: 600;
+  color: #3c4043;
+}
+
+.ct-arrow {
+  font-size: 13px;
+  color: #9aa0a6;
+  flex-shrink: 0;
+}
+
+.ct-badge {
+  margin-left: auto;
+  padding: 4px 10px;
+  border-radius: 20px;
+  font-size: 11.5px;
+  font-weight: 700;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.ct-badge-ok       { background: #dcfce7; color: #16a34a; }
+.ct-badge-warning  { background: #fef9c3; color: #a16207; }
+.ct-badge-critical { background: #fee2e2; color: #dc2626; }
+.ct-badge-expired  { background: #f1f3f4; color: #5f6368; }
+
+/* ── Progress bar ── */
+.ct-bar-wrap {
+  margin-top: 8px;
+  height: 5px;
+  border-radius: 99px;
+  background: rgba(0,0,0,0.07);
+  overflow: hidden;
+}
+
+.ct-bar-fill {
+  height: 100%;
+  border-radius: 99px;
+  transition: width 0.4s ease;
+}
+
+.ct-bar-ok       { background: #4ade80; }
+.ct-bar-warning  { background: #fbbf24; }
+.ct-bar-critical { background: #f87171; }
+.ct-bar-expired  { background: #d1d5db; }
+
+/* ── Compact version (admin sub-cards) ── */
+.ct-compact {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  margin-top: 7px;
+  padding: 4px 9px;
+  border-radius: 6px;
+  font-size: 11.5px;
+  font-weight: 600;
+  border: 1px solid;
+}
+
+.ct-compact.ct-ok       { background: #f0fdf4; border-color: #86efac; color: #16a34a; }
+.ct-compact.ct-warning  { background: #fffbeb; border-color: #fcd34d; color: #a16207; }
+.ct-compact.ct-critical { background: #fff1f2; border-color: #fca5a5; color: #dc2626; }
+.ct-compact.ct-expired  { background: #f8f9fa; border-color: #e8eaed; color: #5f6368; }
+
+.ct-compact-icon  { font-size: 11px; }
+.ct-compact-label { font-weight: 700; }
+.ct-compact-end   { font-weight: 400; opacity: 0.7; font-size: 11px; }
+
+/* ── Pulse animation for critical ── */
+.ct-critical .ct-badge-critical,
+.ct-compact.ct-critical .ct-compact-label {
+  animation: ct-pulse 2s ease-in-out infinite;
+}
+
+@keyframes ct-pulse {
+  0%, 100% { opacity: 1; }
+  50%       { opacity: 0.6; }
+}

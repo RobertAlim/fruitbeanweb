@@ -10,8 +10,6 @@ function generateTempPassword() {
 export async function createClientAccount({ inquiryId }) {
   const pool = getPool();
 
-  // 1. Load the confirmed inquiry — this is our single source of truth,
-  //    never trust the model to resend the details a second time.
   const { rows: inquiryRows } = await pool.query(
     'SELECT * FROM inquiries WHERE inquiry_id = $1',
     [inquiryId]
@@ -22,8 +20,7 @@ export async function createClientAccount({ inquiryId }) {
     return { success: false, message: 'No inquiry found with that ID.' };
   }
 
-  // 2. Idempotency check — if this inquiry already has an account, don't
-  //    create a second one (e.g. if the tool call ever gets retried).
+  // Idempotency check #1 — this exact inquiry already has a linked account
   if (inquiry.client_id) {
     const { rows: existing } = await pool.query(
       'SELECT client_id, email, company_name FROM clients WHERE client_id = $1',
@@ -38,6 +35,29 @@ export async function createClientAccount({ inquiryId }) {
     };
   }
 
+  // Idempotency check #2 — a client with this email already exists from a
+  // different (e.g. retried/duplicate) inquiry. Reuse that account instead
+  // of crashing on the unique email constraint.
+  const { rows: existingByEmail } = await pool.query(
+    'SELECT client_id, email, company_name FROM clients WHERE email = $1',
+    [inquiry.email]
+  );
+
+  if (existingByEmail.length > 0) {
+    const existingClient = existingByEmail[0];
+    await pool.query(
+      `UPDATE inquiries SET client_id = $1, status = 'converted' WHERE inquiry_id = $2`,
+      [existingClient.client_id, inquiryId]
+    );
+    return {
+      success: true,
+      alreadyExisted: true,
+      clientId: existingClient.client_id,
+      email: existingClient.email,
+      companyName: existingClient.company_name,
+    };
+  }
+
   const plainPassword = generateTempPassword();
   const hashedPassword = await bcrypt.hash(plainPassword, 10);
 
@@ -45,19 +65,16 @@ export async function createClientAccount({ inquiryId }) {
   try {
     await client.query('BEGIN');
 
-    // 3. Create the client account
     const { rows: newClient } = await client.query(
       `INSERT INTO clients
-        (company_name, email, password, company_number, account_status, account_type, created_at)
-       VALUES ($1, $2, $3, $4, true, 'client', NOW())
+        (company_name, email, password, company_number, company_address, account_status, account_type, created_at)
+       VALUES ($1, $2, $3, $4, $5, true, 'client', NOW())
        RETURNING client_id`,
-      [inquiry.company_name, inquiry.email, hashedPassword, inquiry.contact_number]
+      [inquiry.company_name, inquiry.email, hashedPassword, inquiry.contact_number, inquiry.company_address]
     );
     const clientId = newClient[0].client_id;
 
-    // 4. Create one rental row per unit (rentals has no quantity column,
-    //    so 2 units of one model = 2 separate rows).
-    const selectedPrinters = inquiry.selected_printers; // JSONB array
+    const selectedPrinters = inquiry.selected_printers;
     const rentalYears = inquiry.rental_years;
     const startDate = new Date();
     const endDate = new Date(startDate);
@@ -82,7 +99,6 @@ export async function createClientAccount({ inquiryId }) {
       }
     }
 
-    // 5. Link the inquiry to the new client, mark it converted
     await client.query(
       `UPDATE inquiries SET client_id = $1, status = 'converted' WHERE inquiry_id = $2`,
       [clientId, inquiryId]
@@ -96,7 +112,7 @@ export async function createClientAccount({ inquiryId }) {
       clientId,
       email: inquiry.email,
       companyName: inquiry.company_name,
-      plainPassword, // only ever used once, immediately, by sendWelcomeEmail
+      plainPassword,
     };
   } catch (err) {
     await client.query('ROLLBACK');

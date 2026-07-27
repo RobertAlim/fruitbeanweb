@@ -89,11 +89,15 @@ export default function LoginPage() {
             </div>
           </div>
         </div>
-        <p className="panel__tagline">Lorem Ipsum</p>
+        <p className="panel__tagline">Reliable printers. Refilled ink. Zero hassle.</p>
       </div>
 
       {/* Right Panel */}
       <div className="panel panel--right">
+        <a href="/" className="back-home">
+          <span className="back-home__arrow">←</span> Back to Home
+        </a>
+
         <h1 className="form-title">Welcome!</h1>
         <p className="form-subtitle">Sign in to your account</p>
 
@@ -137,7 +141,7 @@ export default function LoginPage() {
             <label className="checkbox-label">
               <input type="checkbox" /> <span>Remember me</span>
             </label>
-            <a href="#" className="link">Forgot password?</a>
+            <a href="/forgot-password" className="link">Forgot password?</a>
           </div>
 
           <button type="submit" className="btn btn--primary" disabled={loading}>
@@ -148,6 +152,10 @@ export default function LoginPage() {
             {feedback.msg}
           </p>
         </form>
+
+        <p className="form-subtitle" style={{ marginTop: '20px', textAlign: 'center' }}>
+          Need admin access? <a href="/admin-signup" className="link">Request an admin account</a>
+        </p>
       </div>
     </div>
   );

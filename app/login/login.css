@@ -132,9 +132,39 @@ body {
   display: flex;
   flex-direction: column;
   justify-content: center;
+  position: relative;
 }
 
-.form-title { font-size: 1.55rem; font-weight: 700; color: var(--gray-900); letter-spacing: -.5px; margin-bottom: 4px; }
+/* ─── Back to Home link ──────────────────────────────────────────── */
+.back-home {
+  position: absolute;
+  top: 20px;
+  right: 24px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: .78rem;
+  font-weight: 600;
+  color: var(--gray-600);
+  text-decoration: none;
+  padding: 6px 12px;
+  border-radius: var(--radius-pill);
+  transition: background .18s var(--ease), color .18s var(--ease), transform .15s var(--ease);
+}
+.back-home__arrow {
+  font-size: .85rem;
+  transition: transform .18s var(--ease);
+}
+.back-home:hover {
+  background: var(--green-100);
+  color: var(--green-600);
+}
+.back-home:hover .back-home__arrow {
+  transform: translateX(-3px);
+}
+.back-home:active { transform: translateY(1px); }
+
+.form-title { font-size: 1.55rem; font-weight: 700; color: var(--gray-900); letter-spacing: -.5px; margin-bottom: 4px; margin-top: 8px; }
 .form-subtitle { font-size: .82rem; color: var(--gray-400); margin-bottom: 28px; }
 
 /* ─── Form ───────────────────────────────────────────────────────── */
@@ -212,6 +242,7 @@ body {
   .panel--left { display: none; }
   .panel--right { padding: 36px 28px; }
   .page-wrap { max-width: 420px; }
+  .back-home { top: 14px; right: 14px; }
 }
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { transition: none !important; }

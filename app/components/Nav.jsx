@@ -19,8 +19,6 @@ export default function Nav() {
       <ul className="nav-links">
         <li><a href="#" className="active">Home</a></li>
         <li><a href="#services">Services</a></li>
-        <li><a href="#brands">Lorem</a></li>
-        <li><a href="#pricing">Lorem</a></li>
         <li><a href="#footer-wrap">Contact</a></li>
       </ul>
       <button className="nav-cta" onClick={() => router.push('/login')}>Login</button>

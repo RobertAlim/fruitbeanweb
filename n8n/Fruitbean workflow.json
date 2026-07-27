@@ -1,0 +1,279 @@
+{
+  "name": "Fruitbean",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "fruitbean-chat",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        0,
+        0
+      ],
+      "id": "92008148-33f2-46ff-81b5-d538d26e42b8",
+      "name": "Webhook",
+      "webhookId": "c81c1a58-5710-4cb1-afcb-23276123b14d"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "={{ $json.body.messages.map(m => (m.role === 'user' ? 'Customer: ' : 'Assistant: ') + m.text).join('\\n') }}",
+        "options": {
+          "systemMessage": "You are the AI sales assistant for Fruitbean Ink Refilling Station, a printer\nrental and ink refilling business in Parañaque, Philippines.\n\nCRITICAL RULES — follow these exactly:\n1. NEVER assume or guess information the client did not clearly state. If a\n   message is unclear, garbled, a typo, or ambiguous (e.g. a single stray\n   letter, an incomplete word), you MUST ask them to clarify or repeat\n   themselves. Do NOT interpret it as an answer to your question.\n2. Only record a printer choice if the client typed a real printer model\n   name or an unambiguous reference to one you just listed. A one-letter or\n   nonsensical reply is NEVER a valid printer selection — ask again.\n3. You must have ALL of the following before considering the client ready to\n   submit: company name, company address, contact number, a valid-looking email address,\n   at least one purpose, a usage level (Light/Moderate/Heavy/Very Heavy),\n   number of printers needed, rental period in years, and specific printer\n   model(s) chosen with quantities. If ANY of these is missing, your reply\n   must explicitly ask for the missing item(s) — never skip ahead.\n3b. In particular, always double check that an email was actually given\n   before treating the client as ready. If no email was shared, ask for it\n   directly, e.g. \"What email address should we send your account details to?\"\n4. We only rent to companies/organizations, not individuals for personal use.\n5. Minimum rental period is 1 year.\n6. Every rental includes free ink refills, maintenance, and tech support.\n\nBe warm, concise, and conversational — short paragraphs, no markdown.\n\nFull printer catalog:\n- Epson L120 — ₱1,400/mo — Basic single-function, home/small office. No wireless, no scanner.\n- Epson L121 — ₱1,500/mo — Basic single-function, home/small office. No wireless, no scanner.\n- Epson L130 — ₱1,800/mo — Simple color printing, small offices. Color.\n- Epson L360 — ₱1,400/mo — All-in-one, moderate use. Has scanner.\n- Epson LX-310 — ₱350/mo — Dot matrix, receipts/invoices/multi-part forms.\n- Epson L3110 — ₱1,500/mo — Budget all-in-one. Has scanner.\n- Epson L3156 — ₱2,000/mo — Wireless all-in-one. Wireless, scanner.\n- Epson L3210 — ₱1,700/mo — Daily office workloads. Has scanner.\n- Epson L3250 — ₱2,000/mo — Wireless, flexible setup. Wireless, scanner.\n- Epson L565 — ₱2,000/mo — Print/scan/copy/fax. Wireless, scanner, fax.\n- Epson L5290 — ₱2,500/mo — Business, networking. Wireless, scanner, fax.\n- Epson L5590 — ₱3,000/mo — Growing business, ADF. Wireless, scanner, high-capacity trays.\n- Epson M3170 — ₱3,000/mo — High-speed mono only. Scanner, no color.\n- Epson L6370 — ₱4,000/mo — Large offices, auto duplex. High-capacity.\n- Epson L6460 — ₱4,000/mo — Busy offices, high-speed. Wireless, high-capacity.\n- Epson C5790 — ₱4,500/mo — Professional color, shared offices. Color, high-capacity.\n- Epson L14150 — ₱4,500/mo — A3+ prints, plans/drawings. Color, multiple paper formats up to A3.\n- Epson C5890 — ₱5,500/mo — Corporate/edu, high-volume color. Color, high-capacity.\n- Epson L6550 — ₱1,000/mo — Enterprise, large workgroups. High-capacity.\n- Epson L15150 — ₱1,200/mo — High-volume A3 multifunction. Scanner, multiple formats, high-capacity.\n- Brother MFC T4500 DW — ₱4,500/mo — A3 print/scan/copy/fax. Scanner, fax, multiple formats.\n\nAt the very end of EVERY reply, on its own line, output a line starting with\n\"STATE:\" followed by strict JSON (no markdown, no code fences) with this\nexact shape, using null for anything not yet known:\n\n═══ LANGUAGE ═══\nThe customer may write in Tagalog, Taglish, or English — understand all of\nthese. By default, always reply in English, even if the customer writes in\nTagalog or Taglish. Only switch to replying in Tagalog if the customer\nexplicitly asks you to (e.g. \"pwede bang tagalog?\", \"can you speak\ntagalog\", \"sagot ka nga sa tagalog\"). Once they ask, continue replying in\nTagalog for the rest of the conversation unless they switch back to English.\n\nIMPORTANT: Regardless of what language you're replying in, the STATE JSON\nline at the end of every reply must ALWAYS use the exact English values\nalready defined below — NEVER translate \"usageLevel\" values (must stay\nexactly \"Light\", \"Moderate\", \"Heavy\", or \"Very Heavy\"), and NEVER translate\nor transliterate printer model names (must match the catalog exactly, e.g.\n\"Epson L3210\").\n\nSTATE:{\"companyName\":null,\"companyAddress\":null,\"contactNumber\":null,\"email\":null,\"purposes\":[],\"usageLevel\":null,\"printerCount\":null,\"rentalYears\":null,\"printers\":[],\"readyToSubmit\":false}\n\nOnly set \"readyToSubmit\" to true if you are fully confident every field above\nis filled with real, explicit information the client gave you, AND the\nclient has explicitly confirmed they want to proceed. When in doubt, set it\nto false.\n\nOnce you have all required fields (company name, company address, contact number, email,\npurposes, usage level, printer count, rental years, and specific printer\nmodel(s) with quantities) and the client has explicitly confirmed, do NOT\nask for anything else (like delivery address or payment method) — simply\nconfirm the order is being processed."
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 3.1,
+      "position": [
+        208,
+        0
+      ],
+      "id": "7cb8c480-28c6-406e-8712-e9b13364a876",
+      "name": "AI Agent"
+    },
+    {
+      "parameters": {
+        "model": "openai/gpt-oss-20b",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatGroq",
+      "typeVersion": 1,
+      "position": [
+        80,
+        208
+      ],
+      "id": "17210103-ebae-4993-a8c5-fa12f53b4378",
+      "name": "Groq Chat Model",
+      "credentials": {
+        "groqApi": {
+          "id": "IEgt9EiWZ5dDeQw0",
+          "name": "Groq account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const raw = $input.item.json.output || '';\nconst marker = 'STATE:';\nconst idx = raw.indexOf(marker);\n\nlet replyText = raw;\nlet state = null;\n\nif (idx !== -1) {\n  replyText = raw.slice(0, idx).trim();\n  const jsonPart = raw.slice(idx + marker.length).trim();\n  try {\n    state = JSON.parse(jsonPart);\n  } catch (e) {\n    state = null;\n  }\n}\n\nconst REAL_PRINTER_MODELS = [\n  'Epson L120', 'Epson L121', 'Epson L130', 'Epson L360', 'Epson LX-310',\n  'Epson L3110', 'Epson L3156', 'Epson L3210', 'Epson L3250', 'Epson L565',\n  'Epson L5290', 'Epson L5590', 'Epson M3170', 'Epson L6370', 'Epson L6460',\n  'Epson C5790', 'Epson L14150', 'Epson C5890', 'Epson L6550', 'Epson L15150',\n  'Brother MFC T4500 DW'\n];\n\nfunction isValidEmail(v) {\n  return typeof v === 'string' && /^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$/.test(v.trim());\n}\n\nconst validUsageLevels = ['Light', 'Moderate', 'Heavy', 'Very Heavy'];\n\nlet isReallyReady = false;\nlet rejectionReason = null;\n\nif (state) {\n  const hasBasicFields = Boolean(\n    state.companyName && String(state.companyName).trim() &&\n    state.companyAddress && String(state.companyAddress).trim() &&\n    state.contactNumber && String(state.contactNumber).trim() &&\n    isValidEmail(state.email) &&\n    Array.isArray(state.purposes) && state.purposes.length > 0 &&\n    validUsageLevels.includes(state.usageLevel) &&\n    Number.isInteger(state.printerCount) && state.printerCount >= 1 &&\n    Number.isInteger(state.rentalYears) && state.rentalYears >= 1 &&\n    Array.isArray(state.printers) && state.printers.length > 0 &&\n    state.printers.every(\n      p => p.model && Number.isInteger(p.quantity) && p.quantity >= 1\n    ) &&\n    state.readyToSubmit === true\n  );\n\n  if (hasBasicFields) {\n    const unknownModels = state.printers\n      .map(p => p.model)\n      .filter(m => !REAL_PRINTER_MODELS.includes(m));\n\n    if (unknownModels.length > 0) {\n      isReallyReady = false;\n      rejectionReason = `I don't recognize \"${unknownModels.join('\", \"')}\" as one of our printer models. Could you double check the exact model name? We offer: ${REAL_PRINTER_MODELS.join(', ')}.`;\n    } else {\n      isReallyReady = true;\n    }\n  }\n}\n\nreturn {\n  json: {\n    reply: rejectionReason || replyText,\n    state,\n    isReallyReady\n  }\n};"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        528,
+        0
+      ],
+      "id": "e9abf084-b28c-4b00-9db6-04c84a17169f",
+      "name": "Code in JavaScript"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "8733f379-9f1f-4a12-9345-acfe78a942d6",
+              "leftValue": "={{ $json.isReallyReady }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        736,
+        0
+      ],
+      "id": "98cea34a-30fd-40ba-abc3-3ccd4b7f9836",
+      "name": "If"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "=http://localhost:3000/api/n8n/finalize-rental",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"companyName\": \"{{ $json.state.companyName }}\",\n  \"companyAddress\": \"{{ $json.state.companyAddress }}\",\n  \"contactNumber\": \"{{ $json.state.contactNumber }}\",\n  \"email\": \"{{ $json.state.email }}\",\n  \"purposes\": {{ JSON.stringify($json.state.purposes) }},\n  \"usageLevel\": \"{{ $json.state.usageLevel }}\",\n  \"printerCount\": {{ $json.state.printerCount }},\n  \"rentalYears\": {{ $json.state.rentalYears }},\n  \"printers\": {{ JSON.stringify($json.state.printers) }}\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        944,
+        0
+      ],
+      "id": "bbe393a0-73b9-4c84-980d-57997fb39f0d",
+      "name": "HTTP Request"
+    },
+    {
+      "parameters": {
+        "fromEmail": "Fruitbean Ink Refilling Station <fruitbean@gmail.com>",
+        "toEmail": "={{ $('HTTP Request').item.json.email }}",
+        "subject": "Your Fruitbean account is ready",
+        "html": "=<div style=\"font-family: sans-serif; max-width: 480px; margin: 0 auto;\">\n  <h2 style=\"color: #3ab549;\">Welcome to Fruitbean, {{ $('HTTP Request').item.json.companyName }}!</h2>\n  <p>Your printer rental account has been created. You can log in anytime to view your printers and report any issues.</p>\n  <table style=\"background: #f8f9fa; border-radius: 8px; padding: 16px; margin: 16px 0; width: 100%;\">\n    <tr><td style=\"padding: 4px 12px;\"><strong>Email:</strong></td><td>{{ $('HTTP Request').item.json.email }}</td></tr>\n    <tr><td style=\"padding: 4px 12px;\"><strong>Temporary password:</strong></td><td>{{ $('HTTP Request').item.json.plainPassword }}</td></tr>\n  </table>\n  <p>We recommend keeping this password somewhere safe.</p>\n  <p style=\"color: #999; font-size: 12px; margin-top: 24px;\">\n    Fruitbean Ink Refilling Station — 6223 Tramo St. San Dionisio, Parañaque, Philippines\n  </p>\n</div>",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.emailSend",
+      "typeVersion": 2.1,
+      "position": [
+        1152,
+        0
+      ],
+      "id": "4f038882-6118-4880-bfd7-135da3165c0f",
+      "name": "Send Welcome Email",
+      "webhookId": "650a6afa-a080-4ebc-8a57-172191c5b3e2",
+      "credentials": {
+        "smtp": {
+          "id": "eIm7Nz6JnA8T03oP",
+          "name": "SMTP account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ JSON.stringify({ reply: ($('HTTP Request').item.json.success && $('HTTP Request').item.json.accountCreated) ? (\"🎉 Your rental has been confirmed! We've created your account and sent your login details to \" + $('HTTP Request').item.json.email + \". You can log in anytime to track your printers.\") : (\"Hmm, something went wrong finalizing that order\" + ($('HTTP Request').item.json.message ? (\": \" + $('HTTP Request').item.json.message) : \"\") + \". Could you double check the printer models and try again?\") }) }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.5,
+      "position": [
+        1360,
+        0
+      ],
+      "id": "c1f1264f-aba0-4ddc-9ba4-9a67bd0c1b5c",
+      "name": "Rental Confirmation"
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ JSON.stringify({ reply: $json.reply }) }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.5,
+      "position": [
+        944,
+        192
+      ],
+      "id": "c77289fe-772e-4b27-ba2f-838821419554",
+      "name": "Rental Failure"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Agent": {
+      "main": [
+        [
+          {
+            "node": "Code in JavaScript",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Groq Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code in JavaScript": {
+      "main": [
+        [
+          {
+            "node": "If",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Rental Failure",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP Request": {
+      "main": [
+        [
+          {
+            "node": "Send Welcome Email",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send Welcome Email": {
+      "main": [
+        [
+          {
+            "node": "Rental Confirmation",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate",
+    "availableInMCP": false
+  },
+  "versionId": "c22a8f21-29e6-4618-89d5-2502dd2798d4",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "0908789450b39bf32a1a0bd276b09f2682d281f1fb992ab0e257fe1943bb400a"
+  },
+  "nodeGroups": [],
+  "id": "yMmD5kcupmFlLPMy",
+  "tags": []
+}

@@ -43,10 +43,10 @@ export default function Hero() {
             <div className="blob" style={{ width: '200px', height: '200px', background: '#3ab549', bottom: '-40px', right: '300px', animationDelay: '2s' }}></div>
           </div>
           <div className="slide-content">
-            <h1 className="slide-title">Mission and Vision<br /><span>BLAH</span></h1>
-            <p className="slide-desc">Lorem ipsum dolor sit amet, consectetur adipiscing elit. Morbi tincidunt pulvinar tellus, nec ultrices eros blandit eu.</p>
+            <h1 className="slide-title">Mission and Vision<br /><span>Printing Made Easy</span></h1>
+            <p className="slide-desc">We help businesses print without the headaches, reliable printer rentals, free ink refills, and fast technical support, all in one simple package.</p>
             <div className="slide-btns">
-              <a href="#services" className="btn-primary">View More About Us (?)</a>
+              <a href="#services" className="btn-primary">Learn More About Us</a>
               <a href="#contact" className="btn-outline">Contact Us</a>
             </div>
           </div>
@@ -59,11 +59,11 @@ export default function Hero() {
             <div className="blob" style={{ width: '220px', height: '220px', background: '#f5c518', bottom: '-30px', right: '350px', animationDelay: '3s' }}></div>
           </div>
           <div className="slide-content">
-            <h1 className="slide-title">AVAILABLE PRINTERS AND PRICES<br /><span className="alt">SIGURO</span></h1>
-            <p className="slide-desc">Lorem ipsum dolor sit amet, consectetur adipiscing elit. Morbi tincidunt pulvinar tellus, nec ultrices eros blandit eu.</p>
+            <h1 className="slide-title">AVAILABLE PRINTERS AND PRICES<br /><span className="alt">MADE SIMPLE</span></h1>
+            <p className="slide-desc">Straightforward monthly rates with no hidden fees,  browse our full lineup of Epson and Brother printers and find the right fit for your office.</p>
             <div className="slide-btns">
               <a href="#pricing" className="btn-primary">View Pricing</a>
-              <a href="#brands" className="btn-outline">BLAH</a>
+              <a href="#brands" className="btn-outline">Browse Printer Models</a>
             </div>
           </div>
         </div>
@@ -150,21 +150,21 @@ export default function Hero() {
                 <span style={{ color: '#18f518', display: 'block' }}>RENT A PRINTER</span>
               </h1>
               <ul className="slide4-service-list">
-                <li style={{ fontSize: '15px' }}><span className="slide4-dot" style={{ background: '#00aeef' }}></span>Networking/Installation/Setup</li>
+                <li style={{ fontSize: '15px' }}><span className="slide4-dot" style={{ background: '#00aeef' }}></span>Networking</li>
                 <li style={{ fontSize: '15px' }}><span className="slide4-dot" style={{ background: '#e0338a' }}></span>Maintenance</li>
                 <li style={{ fontSize: '15px' }}><span className="slide4-dot" style={{ background: '#f5c518' }}></span>Tech Support</li>
                 <li style={{ fontSize: '15px' }}><span className="slide4-dot" style={{ background: '#00aeef' }}></span>Ink Supply</li>
-                <li style={{ fontSize: '15px' }}><span className="slide4-dot" style={{ background: '#e0338a' }}></span>Delivery</li>
+                <li style={{ fontSize: '15px' }}><span className="slide4-dot" style={{ background: '#e0338a' }}></span>Setup</li>
                 <li style={{ fontSize: '15px' }}><span className="slide4-dot" style={{ background: '#f5c518' }}></span>Delivery</li>
               </ul>
             </div>
             <div className="slide4-collage">
-              <div className="s4-photo s4-photo-1"><img src="images/service-setup.jpg" alt="Setup" /></div>
-              <div className="s4-photo s4-photo-2"><img src="images/service-ink.jpg" alt="Maintenance" /></div>
-              <div className="s4-photo s4-photo-3"><img src="images/service-maintenance.jpg" alt="Tech Support" /></div>
-              <div className="s4-photo s4-photo-4"><img src="images/service-support.jpg" alt="Ink Supply" /></div>
-              <div className="s4-photo s4-photo-5"><img src="images/service-driver.jpg" alt="Delivery" /></div>
-              <div className="s4-photo s4-photo-6"><img src="images/service-network.jpg" alt="Delivery" /></div>
+              <div className="s4-photo s4-photo-1"><img src="images/TECH SUPPORT.jpg" alt="Tech Support" /></div>
+              <div className="s4-photo s4-photo-2"><img src="images/REPAIR.jpg" alt=" Repair" /></div>
+              <div className="s4-photo s4-photo-3"><img src="images/Maintenance 1.jpg" alt="Maintenance" /></div>
+              <div className="s4-photo s4-photo-4"><img src="images/INK REFILL.jpg" alt="Ink Supply" /></div>
+              <div className="s4-photo s4-photo-5"><img src="images/SETUP.jpg" alt="SETUP" /></div>
+              <div className="s4-photo s4-photo-6"><img src="images/MAINTENANCE 2.jpg" alt="Delivery" /></div>
             </div>
           </div>
         </div>

@@ -27,7 +27,6 @@ const printers = {
 
 const printerModels = Object.keys(printers);
 
-// ✅ FIX: faqs now has both q and a
 const faqs = [
   {
     q: 'What is the minimum rental period for a printer?',
@@ -42,12 +41,12 @@ const faqs = [
     a: 'Yes. Ink refills, preventive maintenance, and technical support are included in our printer rental service at no additional cost throughout the rental period.',
   },
   {
-    q: 'INSERT QUESTION HERE',
-    a: 'Lorem ipsum dolor sit amet, consectetur adipiscing elit.',
+    q: 'What happens if my printer breaks down?',
+    a: 'You can report the issue directly from your client dashboard. Our troubleshooting assistant will try to help you fix it right away, and if it can\'t, we\'ll dispatch a technician or resolve it remotely via AnyDesk — at no extra cost.',
   },
   {
-    q: 'INSERT QUESTION HERE',
-    a: 'Lorem ipsum dolor sit amet, consectetur adipiscing elit.',
+    q: 'Can I request additional printers or extend my rental?',
+    a: 'Yes. Existing clients can request more printers or adjust their rental terms anytime from their dashboard — no need to go through the sales chat again.',
   },
 ];
 
@@ -96,22 +95,22 @@ export default function TabsSection() {
             <div className="service-card reveal">
               <div className="card-icon icon-cyan">🖨️</div>
               <h3>Printer Renting</h3>
-              <p>Lorem ipsum dolor sit amet, consectetur adipiscing elit.</p>
+              <p>Rent a well-maintained printer suited to your business needs, with flexible terms and no long-term commitment required.</p>
             </div>
             <div className="service-card reveal">
               <div className="card-icon icon-blue">🔧</div>
               <h3>Troubleshooting</h3>
-              <p>Lorem ipsum dolor sit amet, consectetur adipiscing elit.</p>
+              <p>Our support team diagnoses and resolves printer issues promptly, minimizing disruption to your daily operations.</p>
             </div>
             <div className="service-card reveal">
               <div className="card-icon icon-magenta">🧪</div>
               <h3>Ink Refilling</h3>
-              <p>Lorem ipsum dolor sit amet, consectetur adipiscing elit.</p>
+              <p>We provide scheduled ink refills using premium, high-yield formulations to ensure consistent print quality at all times.</p>
             </div>
             <div className="service-card reveal">
               <div className="card-icon icon-green">🚀</div>
               <h3>Express Service</h3>
-              <p>Lorem ipsum dolor sit amet, consectetur adipiscing elit.</p>
+              <p>Priority response for urgent cases, with technicians dispatched swiftly to restore your printer to full working order.</p>
             </div>
           </div>
         </div>
@@ -132,7 +131,7 @@ export default function TabsSection() {
       <div className={`tab-panel${activeTab === 'faq' ? ' active' : ''}`}>
         <div className="faq-list">
           {faqs.map((faq, i) => (
-            <div key={i} className={`faq-item${openFaq === i ? ' open' : ''}`}> {/* ✅ no 'reveal' */}
+            <div key={i} className={`faq-item${openFaq === i ? ' open' : ''}`}>
               <div className="faq-q" onClick={() => toggleFaq(i)}>
                 {faq.q}
                 <span className="faq-arrow">&#8964;</span>

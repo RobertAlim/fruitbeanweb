@@ -32,7 +32,7 @@ export default function Footer() {
       </div>
       <div className="footer-right">
         <h3>About Fruitbean Ink</h3>
-        <p>Lorem ipsum dolor sit amet, consectetur adipiscing elit. Morbi tincidunt pulvinar tellus, nec ultrices eros blandit eu.</p>
+        <p>Since 2015, Fruitbean Ink Refilling Station has been providing reliable, affordable, and high-quality ink refilling services to customers from both the North and South, serving schools, offices, and businesses.</p>
         <div className="footer-socials">
           <a href="https://www.facebook.com/YourPage" target="_blank" rel="noopener" aria-label="Facebook">
             <svg viewBox="0 0 24 24"><path d="M18 2h-3a5 5 0 0 0-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 0 1 1-1h3z"/></svg>

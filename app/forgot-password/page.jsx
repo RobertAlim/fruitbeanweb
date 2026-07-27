@@ -45,6 +45,7 @@ export default function ForgotPasswordPage() {
   }
 
   return (
+    <div className="login-page">
     <div className="page-wrap">
 
       {/* Left Panel */}
@@ -127,6 +128,7 @@ export default function ForgotPasswordPage() {
           </p>
         )}
       </div>
+    </div>
     </div>
   );
 }

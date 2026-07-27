@@ -63,6 +63,7 @@ export default function AdminSignupPage() {
   }
 
   return (
+    <div className="login-page">
     <div className="page-wrap">
 
       {/* Left Panel */}
@@ -212,6 +213,7 @@ export default function AdminSignupPage() {
           </p>
         )}
       </div>
+    </div>
     </div>
   );
 }

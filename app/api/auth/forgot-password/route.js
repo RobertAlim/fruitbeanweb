@@ -45,11 +45,18 @@ export async function POST(req) {
     const origin    = new URL(req.url).origin;
     const resetLink = `${origin}/reset-password?token=${rawToken}`;
 
-    await sendPasswordResetEmail({
+    const emailResult = await sendPasswordResetEmail({
       email: user.email,
       companyName: user.company_name,
       resetLink,
     });
+
+    // sendPasswordResetEmail swallows its own errors (so a broken mailer
+    // never leaks account existence to the client), but we still need to
+    // know about it server-side or every failure looks like a success.
+    if (!emailResult?.success) {
+      console.error('forgot-password: reset email failed to send for', user.email, emailResult?.message);
+    }
 
     return Response.json(genericResponse, { status: 200 });
   } catch (err) {

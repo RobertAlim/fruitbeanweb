@@ -57,6 +57,7 @@ function ResetPasswordForm() {
   }
 
   return (
+    <div className="login-page">
     <div className="page-wrap">
 
       {/* Left Panel */}
@@ -156,6 +157,7 @@ function ResetPasswordForm() {
           </p>
         )}
       </div>
+    </div>
     </div>
   );
 }

@@ -40,6 +40,10 @@ export default function AdminChatsPage() {
   const listPollRef = useRef(null);
   const msgPollRef = useRef(null);
   const scrollRef = useRef(null);
+  // Pauses pollActiveMessages while an admin's own send is in flight, so it
+  // can't fetch and append the same just-saved message that handleSend is
+  // about to append itself.
+  const sendingRef = useRef(false);
 
   /* ── Auth guard (same pattern as /admin) ── */
   useEffect(() => {
@@ -110,12 +114,18 @@ export default function AdminChatsPage() {
   }
 
   const pollActiveMessages = useCallback(async () => {
-    if (!activeId) return;
+    if (!activeId || sendingRef.current) return;
     try {
       const res = await fetch(`/api/admin/conversations/${activeId}/messages?afterId=${lastMsgIdRef.current}`);
       const data = await res.json();
       if (res.ok && data.messages?.length) {
-        setActiveMessages(prev => [...prev, ...data.messages]);
+        setActiveMessages(prev => {
+          // Belt-and-suspenders: skip anything already rendered, in case a
+          // send's own response and this poll ever land in an unlucky order.
+          const seen = new Set(prev.map(m => m.message_id));
+          const fresh = data.messages.filter(m => !seen.has(m.message_id));
+          return fresh.length ? [...prev, ...fresh] : prev;
+        });
         lastMsgIdRef.current = data.messages[data.messages.length - 1].message_id;
       }
     } catch (err) {
@@ -139,6 +149,7 @@ export default function AdminChatsPage() {
     if (!text || sending || !activeId) return;
 
     setSending(true);
+    sendingRef.current = true;
     setInput('');
     try {
       const res = await fetch(`/api/admin/conversations/${activeId}/messages`, {
@@ -148,7 +159,9 @@ export default function AdminChatsPage() {
       });
       const data = await res.json();
       if (res.ok) {
-        setActiveMessages(prev => [...prev, data.message]);
+        setActiveMessages(prev =>
+          prev.some(m => m.message_id === data.message.message_id) ? prev : [...prev, data.message]
+        );
         lastMsgIdRef.current = data.message.message_id;
         setActiveConversation(data.conversation);
         fetchConversations();
@@ -157,6 +170,7 @@ export default function AdminChatsPage() {
       console.error('Failed to send message:', err);
     } finally {
       setSending(false);
+      sendingRef.current = false;
     }
   }
 

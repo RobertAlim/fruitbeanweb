@@ -59,6 +59,7 @@ export default function AdminPage() {
   const [deleteTypedConfirm, setDeleteTypedConfirm] = useState('');
   const [deleteError, setDeleteError]               = useState('');
   const [deleteSubmitting, setDeleteSubmitting]     = useState(false);
+  const [awaitingHumanCount, setAwaitingHumanCount] = useState(0);
 
   /* ── Auth + fetch ── */
   useEffect(() => {
@@ -92,6 +93,10 @@ export default function AdminPage() {
       const pendingRes  = await fetch('/api/admin/clients?account_type=admin&active=false');
       const pendingData = await pendingRes.json();
       if (pendingRes.ok) setPendingAdmins(pendingData.clients);
+
+      const chatsRes  = await fetch('/api/admin/conversations?status=awaiting_human');
+      const chatsData = await chatsRes.json();
+      if (chatsRes.ok) setAwaitingHumanCount(chatsData.conversations.length);
     } catch (err) { console.error('Failed to fetch clients:', err); }
     finally { setRefreshing(false); setLoading(false); }
   }
@@ -534,6 +539,9 @@ export default function AdminPage() {
           </div>
         </a>
         <div className="header-right">
+          <a href="/admin/chats" className="btn-secondary">
+            💬 Live Chat{awaitingHumanCount > 0 ? ` (${awaitingHumanCount})` : ''}
+          </a>
           <div className="header-user">
             <div className="user-avatar">{admin.initials}</div>
             <div className="user-info">

@@ -62,6 +62,14 @@ export default function AdminPage() {
 
   /* ── Auth + fetch ── */
   useEffect(() => {
+    // Support "Remember me": fall back to localStorage if sessionStorage was cleared
+    if (!sessionStorage.getItem('client_id') && localStorage.getItem('client_id')) {
+      ['client_id', 'account_name', 'account_email', 'account_type'].forEach(key => {
+        const val = localStorage.getItem(key);
+        if (val) sessionStorage.setItem(key, val);
+      });
+    }
+
     const client_id    = sessionStorage.getItem('client_id');
     const account_type = sessionStorage.getItem('account_type');
     const account_name = sessionStorage.getItem('account_name');
@@ -536,7 +544,7 @@ export default function AdminPage() {
           <button className="btn-secondary" onClick={() => setShowChangePassword(true)}>
             🔒 Change Password
           </button>
-          <button className="btn-logout" onClick={() => { sessionStorage.clear(); router.push('/login'); }}>
+          <button className="btn-logout" onClick={() => { sessionStorage.clear(); localStorage.removeItem('client_id'); localStorage.removeItem('account_name'); localStorage.removeItem('account_email'); localStorage.removeItem('account_type'); router.push('/login'); }}>
             Logout
           </button>
         </div>

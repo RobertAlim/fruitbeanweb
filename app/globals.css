@@ -190,6 +190,22 @@ nav {
 }
 .nav-cta:hover::before { transform: translateX(100%); }
 
+/* ─── NAV: LOGGED-IN USER AREA ─── */
+.nav-user {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.nav-user__name {
+  font-size: 13px;
+  font-weight: 600;
+  color: #c8ffc8;
+  white-space: nowrap;
+  max-width: 160px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
 /* ─── HERO SLIDER ─── */
 .hero {
   position: relative;

@@ -15,7 +15,8 @@ export default function LoginPage() {
   const [showPass, setShowPass] = useState(false);
   const [errors,   setErrors]   = useState({ email: '', password: '' });
   const [feedback, setFeedback] = useState({ msg: '', type: '' });
-  const [loading,  setLoading]  = useState(false);
+  const [loading,    setLoading]    = useState(false);
+  const [rememberMe, setRememberMe] = useState(false);
 
   async function handleSubmit(e) {
     e.preventDefault();
@@ -37,10 +38,26 @@ export default function LoginPage() {
       const data = await res.json();
 
       if (res.ok) {
-        sessionStorage.setItem('client_id',     data.client_id);    // ← key is client_id
+        // Always keep the session alive for this tab
+        sessionStorage.setItem('client_id',     data.client_id);
         sessionStorage.setItem('account_name',  data.account_name);
         sessionStorage.setItem('account_email', data.account_email);
         sessionStorage.setItem('account_type',  data.account_type);
+
+        // "Remember me" → persist across browser restarts via localStorage
+        if (rememberMe) {
+          localStorage.setItem('client_id',     data.client_id);
+          localStorage.setItem('account_name',  data.account_name);
+          localStorage.setItem('account_email', data.account_email);
+          localStorage.setItem('account_type',  data.account_type);
+        } else {
+          // Make sure any old persistent session is cleared
+          localStorage.removeItem('client_id');
+          localStorage.removeItem('account_name');
+          localStorage.removeItem('account_email');
+          localStorage.removeItem('account_type');
+        }
+
         setFeedback({ msg: '✅ Login successful! Redirecting…', type: 'success' });
         const destination = data.account_type === 'admin' ? '/admin' : '/client';
         setTimeout(() => router.push(destination), 800);
@@ -140,7 +157,11 @@ export default function LoginPage() {
 
           <div className="field field--row">
             <label className="checkbox-label">
-              <input type="checkbox" /> <span>Remember me</span>
+              <input
+                type="checkbox"
+                checked={rememberMe}
+                onChange={e => setRememberMe(e.target.checked)}
+              /> <span>Remember me</span>
             </label>
             <a href="/forgot-password" className="link">Forgot password?</a>
           </div>

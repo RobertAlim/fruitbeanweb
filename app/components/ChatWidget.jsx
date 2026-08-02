@@ -6,6 +6,7 @@ import "./chatwidget.css";
 const SESSION_KEY = "fruitbean_chat_session_id";
 const POLL_MS = 4000;
 const POLL_FAILS_BEFORE_WARNING = 2;
+const TYPING_ID = "__typing__";
 
 const isLiveStatus = (status) => status === "awaiting_human" || status === "human";
 
@@ -37,14 +38,14 @@ function getKnownIdentity() {
 	return {};
 }
 
-// Converts a DB row into the { role, text } shape the widget already renders.
+// Converts a DB row into the { id, role, text } shape the widget renders.
 function toDisplayMessage(m) {
-	if (m.sender_type === "visitor") return { role: "user", text: m.text };
+	if (m.sender_type === "visitor") return { id: m.message_id, role: "user", text: m.text };
 	if (m.sender_type === "admin")
-		return { role: "bot", text: m.text, from: m.sender_name || "Support" };
-	if (m.sender_type === "system") return { role: "system", text: m.text };
+		return { id: m.message_id, role: "bot", text: m.text, from: m.sender_name || "Support" };
+	if (m.sender_type === "system") return { id: m.message_id, role: "system", text: m.text };
 	// 'ai'
-	return { role: "bot", text: m.text };
+	return { id: m.message_id, role: "bot", text: m.text };
 }
 
 function getInitials(name) {
@@ -63,6 +64,7 @@ export default function ChatWidget() {
 	const [ready, setReady] = useState(false);
 	const [messages, setMessages] = useState([
 		{
+			id: "__welcome__",
 			role: "bot",
 			text: "Hi! I'm Fruitbean's assistant. Looking to rent a printer, or have a question about our ink refill service?",
 		},
@@ -76,8 +78,12 @@ export default function ChatWidget() {
 
 	const sessionIdRef = useRef(null);
 	const lastMessageIdRef = useRef(0);
+	// Every server row we've ever rendered, so a poll that races with an
+	// in-flight send (or vice versa) can't add the same message twice.
+	const seenIdsRef = useRef(new Set());
 	const pollRef = useRef(null);
 	const pollFailCountRef = useRef(0);
+	const sendingRef = useRef(false);
 
 	const scrollRef = useRef(null);
 	const textareaRef = useRef(null);
@@ -102,16 +108,47 @@ export default function ChatWidget() {
 		el.style.height = Math.min(el.scrollHeight, 100) + "px";
 	}, [input]);
 
+	useEffect(() => {
+		sendingRef.current = sending;
+	}, [sending]);
+
+	// Merges a batch of server rows into local state exactly once each,
+	// regardless of whether they arrived via polling, a send response, or
+	// the initial session load. `visible: false` records a row as seen
+	// (so polling won't re-add it) without rendering it a second time —
+	// used for the visitor's own message, which is already shown
+	// optimistically the moment they hit send.
+	function mergeServerMessages(serverMessages, { visible = true } = {}) {
+		if (!serverMessages?.length) return;
+
+		const fresh = serverMessages.filter((m) => !seenIdsRef.current.has(m.message_id));
+		if (!fresh.length) {
+			lastMessageIdRef.current = Math.max(
+				lastMessageIdRef.current,
+				...serverMessages.map((m) => m.message_id)
+			);
+			return;
+		}
+
+		fresh.forEach((m) => seenIdsRef.current.add(m.message_id));
+		lastMessageIdRef.current = Math.max(
+			lastMessageIdRef.current,
+			...fresh.map((m) => m.message_id)
+		);
+
+		if (!visible) return;
+		const toShow = fresh.filter((m) => m.sender_type !== "visitor");
+		if (toShow.length) {
+			setMessages((prev) => [...prev, ...toShow.map(toDisplayMessage)]);
+		}
+	}
+
 	function applyServerState(conversation, serverMessages) {
 		if (conversation) {
 			setStatus(conversation.status);
 			setClaimedByName(conversation.claimed_by_name || null);
 		}
-		if (serverMessages?.length) {
-			const mapped = serverMessages.map(toDisplayMessage);
-			setMessages((prev) => [...prev, ...mapped]);
-			lastMessageIdRef.current = serverMessages[serverMessages.length - 1].message_id;
-		}
+		mergeServerMessages(serverMessages);
 	}
 
 	// Load (or resume) the conversation the first time the widget is opened.
@@ -128,10 +165,7 @@ export default function ChatWidget() {
 			if (res.ok) {
 				setStatus(data.conversation.status);
 				setClaimedByName(data.conversation.claimed_by_name || null);
-				if (data.messages?.length) {
-					setMessages((prev) => [...prev, ...data.messages.map(toDisplayMessage)]);
-					lastMessageIdRef.current = data.messages[data.messages.length - 1].message_id;
-				}
+				mergeServerMessages(data.messages);
 			}
 		} catch (err) {
 			console.error("Failed to start chat session:", err);
@@ -141,7 +175,7 @@ export default function ChatWidget() {
 	}
 
 	const poll = useCallback(async () => {
-		if (!sessionIdRef.current) return;
+		if (!sessionIdRef.current || sendingRef.current) return;
 		try {
 			const res = await fetch(
 				`/api/chat/messages?sessionId=${encodeURIComponent(
@@ -189,13 +223,13 @@ export default function ChatWidget() {
 		const text = input.trim();
 		if (!text || sending) return;
 
-		setMessages((prev) => [...prev, { role: "user", text }]);
+		setMessages((prev) => [...prev, { id: `__local_${Date.now()}__`, role: "user", text }]);
 		setInput("");
 		setSending(true);
 
 		const waitingOnAi = status === "ai";
 		if (waitingOnAi) {
-			setMessages((prev) => [...prev, { role: "bot", text: "" }]);
+			setMessages((prev) => [...prev, { id: TYPING_ID, role: "bot", text: "" }]);
 		}
 
 		try {
@@ -213,29 +247,30 @@ export default function ChatWidget() {
 
 			const data = await res.json();
 
-			// Replace the typing indicator (if any) with the real reply(ies).
-			setMessages((prev) => (waitingOnAi ? prev.slice(0, -1) : prev));
+			// Remove the typing indicator by its stable id — never by array
+			// position, since a poll could have inserted a real message ahead
+			// of it while this request was in flight.
+			setMessages((prev) => prev.filter((m) => m.id !== TYPING_ID));
 
 			if (data.conversation) {
 				setStatus(data.conversation.status);
 				setClaimedByName(data.conversation.claimed_by_name || null);
 			}
-			if (data.messages?.length) {
-				// Only append messages newer than what we already have (the
-				// visitor message we optimistically added is already shown,
-				// so skip re-adding sender_type === 'visitor' rows here).
-				const newOnes = data.messages.filter((m) => m.sender_type !== "visitor");
-				setMessages((prev) => [...prev, ...newOnes.map(toDisplayMessage)]);
-				lastMessageIdRef.current = data.messages[data.messages.length - 1].message_id;
-			}
+			// The visitor's own row is already shown optimistically, so mark it
+			// seen without rendering it again; everything else (ai/admin/system)
+			// gets appended — deduped against anything a concurrent poll already
+			// picked up.
+			mergeServerMessages(data.messages, { visible: true });
+
 			pollFailCountRef.current = 0;
 			setConnectionIssue(false);
 		} catch (err) {
 			setMessages((prev) => {
-				const next = waitingOnAi ? prev.slice(0, -1) : prev;
+				const next = prev.filter((m) => m.id !== TYPING_ID);
 				return [
 					...next,
 					{
+						id: `__local_err_${Date.now()}__`,
 						role: "bot",
 						text: `⚠️ ${err.message || "Sorry, I couldn't connect right now."}`,
 					},
@@ -340,17 +375,12 @@ export default function ChatWidget() {
 					)}
 
 					<div className="chatwidget-messages" ref={scrollRef}>
-						{messages.map((m, i) => {
-							const isLast = i === messages.length - 1;
-							const isEmptyBotTyping =
-								m.role === "bot" &&
-								m.text === "" &&
-								isLast &&
-								sending;
+						{messages.map((m) => {
+							const isEmptyBotTyping = m.id === TYPING_ID;
 
 							if (m.role === "system") {
 								return (
-									<div key={i} className="chatwidget-system-row">
+									<div key={m.id} className="chatwidget-system-row">
 										{m.text}
 									</div>
 								);
@@ -358,7 +388,7 @@ export default function ChatWidget() {
 
 							return (
 								<div
-									key={i}
+									key={m.id}
 									className={`chatwidget-row chatwidget-row--${m.role}`}
 								>
 									{m.role === "bot" &&

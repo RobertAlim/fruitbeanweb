@@ -31,6 +31,8 @@ export default function AdminChatsPage() {
   const [activeId, setActiveId] = useState(null);
   const [activeConversation, setActiveConversation] = useState(null);
   const [activeMessages, setActiveMessages] = useState([]);
+  const [activeError, setActiveError] = useState(null);
+  const [activeLoading, setActiveLoading] = useState(false);
   const [input, setInput] = useState('');
   const [sending, setSending] = useState(false);
 
@@ -82,7 +84,10 @@ export default function AdminChatsPage() {
   /* ── Selected conversation ── */
   async function openConversation(id) {
     setActiveId(id);
+    setActiveConversation(null);
     setActiveMessages([]);
+    setActiveError(null);
+    setActiveLoading(true);
     lastMsgIdRef.current = 0;
     try {
       const res = await fetch(`/api/admin/conversations/${id}`);
@@ -93,9 +98,14 @@ export default function AdminChatsPage() {
         if (data.messages.length) {
           lastMsgIdRef.current = data.messages[data.messages.length - 1].message_id;
         }
+      } else {
+        setActiveError(data.error || 'Could not open this conversation.');
       }
     } catch (err) {
       console.error('Failed to open conversation:', err);
+      setActiveError('Could not open this conversation. Check your connection and try again.');
+    } finally {
+      setActiveLoading(false);
     }
   }
 
@@ -256,7 +266,20 @@ export default function AdminChatsPage() {
           </div>
 
           <div className="chat-panel">
-            {!activeConversation ? (
+            {activeLoading ? (
+              <div className="chat-panel-empty">
+                <div style={{ fontSize: '32px' }}>💬</div>
+                <div>Opening conversation…</div>
+              </div>
+            ) : activeError ? (
+              <div className="chat-panel-empty">
+                <div style={{ fontSize: '32px' }}>⚠️</div>
+                <div>{activeError}</div>
+                <button className="btn-secondary" onClick={() => openConversation(activeId)}>
+                  Try again
+                </button>
+              </div>
+            ) : !activeConversation ? (
               <div className="chat-panel-empty">
                 <div style={{ fontSize: '32px' }}>💬</div>
                 <div>Select a conversation to start chatting</div>

@@ -5,7 +5,8 @@ export const runtime = 'nodejs';
 // GET /api/admin/conversations/:id
 export async function GET(_req, { params }) {
   try {
-    const conversationId = Number(params.id);
+    const { id } = await params;
+    const conversationId = Number(id);
     const conversation = await getConversationById(conversationId);
     if (!conversation) {
       return Response.json({ error: 'Conversation not found.' }, { status: 404 });
@@ -22,7 +23,8 @@ export async function GET(_req, { params }) {
 // Body: { action: 'close' | 'reopen_ai' | 'reopen_human', adminId, adminName }
 export async function PATCH(req, { params }) {
   try {
-    const conversationId = Number(params.id);
+    const { id } = await params;
+    const conversationId = Number(id);
     const { action, adminId, adminName } = await req.json();
 
     const conversation = await getConversationById(conversationId);

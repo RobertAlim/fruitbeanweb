@@ -6,7 +6,8 @@ export const runtime = 'nodejs';
 // Used by the admin chat panel to poll for new visitor/AI messages.
 export async function GET(req, { params }) {
   try {
-    const conversationId = Number(params.id);
+    const { id } = await params;
+    const conversationId = Number(id);
     const { searchParams } = new URL(req.url);
     const afterId = Number(searchParams.get('afterId') || 0);
 
@@ -26,7 +27,8 @@ export async function GET(req, { params }) {
 // not an exclusive lock — other admins can still jump in).
 export async function POST(req, { params }) {
   try {
-    const conversationId = Number(params.id);
+    const { id } = await params;
+    const conversationId = Number(id);
     const { adminId, adminName, text } = await req.json();
 
     if (!text?.trim()) {

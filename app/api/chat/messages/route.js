@@ -112,11 +112,20 @@ export async function POST(req) {
       }
     } catch (err) {
       console.error('n8n call failed:', err);
+      // The AI path is broken (timeout, webhook down, etc.) — don't make the
+      // visitor take an extra action to reach a person. Escalate for them.
+      finalConversation = await setStatus({
+        conversationId: conversation.conversation_id,
+        status: 'awaiting_human',
+      });
       await addMessage({
         conversationId: conversation.conversation_id,
         senderType: 'system',
-        text: "⚠️ I'm having trouble connecting right now. You can tap \"Talk to a person\" below and a team member will help you directly.",
+        text: "⚠️ I'm having trouble connecting right now, so I'm bringing in a team member to help you directly.",
       });
+      notifyAdminsOfEscalation({ conversation: finalConversation }).catch(e =>
+        console.error('notifyAdminsOfEscalation failed:', e)
+      );
     }
 
     const messages = await getMessages({ conversationId: conversation.conversation_id });

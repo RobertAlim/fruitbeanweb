@@ -23,12 +23,32 @@ const WEBHOOK_URL =
   process.env.N8N_CHAT_WEBHOOK_URL ||
   'https://fruitbean.app.n8n.cloud/webhook/fruitbean-chat';
 
+// n8n workflows can occasionally hang (a stuck node, a slow LLM call, etc).
+// Without a timeout, a single hung request would leave the visitor staring
+// at a typing indicator forever with no fallback. 20s is generous for a
+// chat reply but still well inside typical serverless function limits.
+const REQUEST_TIMEOUT_MS = 20_000;
+
 export async function callN8nChat({ messages }) {
-  const res = await fetch(WEBHOOK_URL, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ messages }),
-  });
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
+
+  let res;
+  try {
+    res = await fetch(WEBHOOK_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ messages }),
+      signal: controller.signal,
+    });
+  } catch (err) {
+    if (err.name === 'AbortError') {
+      throw new Error('The assistant is taking too long to respond.');
+    }
+    throw err;
+  } finally {
+    clearTimeout(timeout);
+  }
 
   if (!res.ok) {
     const errData = await res.json().catch(() => ({}));

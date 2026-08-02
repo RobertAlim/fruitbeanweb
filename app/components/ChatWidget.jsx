@@ -5,6 +5,9 @@ import "./chatwidget.css";
 
 const SESSION_KEY = "fruitbean_chat_session_id";
 const POLL_MS = 4000;
+const POLL_FAILS_BEFORE_WARNING = 2;
+
+const isLiveStatus = (status) => status === "awaiting_human" || status === "human";
 
 function getOrCreateSessionId() {
 	if (typeof window === "undefined") return null;
@@ -44,6 +47,17 @@ function toDisplayMessage(m) {
 	return { role: "bot", text: m.text };
 }
 
+function getInitials(name) {
+	if (!name) return "FB";
+	return name
+		.trim()
+		.split(/\s+/)
+		.map((w) => w[0])
+		.join("")
+		.toUpperCase()
+		.slice(0, 2);
+}
+
 export default function ChatWidget() {
 	const [open, setOpen] = useState(false);
 	const [ready, setReady] = useState(false);
@@ -58,13 +72,17 @@ export default function ChatWidget() {
 	const [input, setInput] = useState("");
 	const [sending, setSending] = useState(false);
 	const [escalating, setEscalating] = useState(false);
+	const [connectionIssue, setConnectionIssue] = useState(false);
 
 	const sessionIdRef = useRef(null);
 	const lastMessageIdRef = useRef(0);
 	const pollRef = useRef(null);
+	const pollFailCountRef = useRef(0);
 
 	const scrollRef = useRef(null);
 	const textareaRef = useRef(null);
+
+	const live = isLiveStatus(status);
 
 	useEffect(() => {
 		sessionIdRef.current = getOrCreateSessionId();
@@ -131,9 +149,21 @@ export default function ChatWidget() {
 				)}&afterId=${lastMessageIdRef.current}`
 			);
 			const data = await res.json();
-			if (res.ok) applyServerState(data.conversation, data.messages);
+			if (res.ok) {
+				applyServerState(data.conversation, data.messages);
+				pollFailCountRef.current = 0;
+				setConnectionIssue(false);
+			} else {
+				throw new Error("poll failed");
+			}
 		} catch (err) {
-			// Silent — polling failures shouldn't interrupt the UI.
+			// A couple of missed polls isn't worth alarming anyone over — admin
+			// replies just arrive a little late. Only surface it if it keeps
+			// happening, so the visitor knows to refresh if needed.
+			pollFailCountRef.current += 1;
+			if (pollFailCountRef.current >= POLL_FAILS_BEFORE_WARNING) {
+				setConnectionIssue(true);
+			}
 		}
 	}, []);
 
@@ -198,6 +228,8 @@ export default function ChatWidget() {
 				setMessages((prev) => [...prev, ...newOnes.map(toDisplayMessage)]);
 				lastMessageIdRef.current = data.messages[data.messages.length - 1].message_id;
 			}
+			pollFailCountRef.current = 0;
+			setConnectionIssue(false);
 		} catch (err) {
 			setMessages((prev) => {
 				const next = waitingOnAi ? prev.slice(0, -1) : prev;
@@ -234,6 +266,23 @@ export default function ChatWidget() {
 	}
 
 	const showTalkToHuman = status === "ai";
+
+	const headerTitle = live
+		? claimedByName
+			? claimedByName
+			: "Fruitbean Live Support"
+		: "Fruitbean Assistant";
+
+	const headerSubtitle = connectionIssue
+		? "Reconnecting…"
+		: status === "human"
+		? `Chatting with ${claimedByName || "our team"}`
+		: status === "awaiting_human"
+		? "Connecting you to our team…"
+		: status === "closed"
+		? "Conversation ended"
+		: "Usually replies in a minute";
+
 	const bannerText =
 		status === "awaiting_human"
 			? "🙋 You're connected with our team — someone will reply shortly."
@@ -245,27 +294,34 @@ export default function ChatWidget() {
 		<div className="chatwidget-root">
 			{open && (
 				<div
-					className="chatwidget-panel"
+					className={`chatwidget-panel${live ? " chatwidget-panel--live" : ""}`}
 					role="dialog"
-					aria-label="Fruitbean chat assistant"
+					aria-label={live ? "Fruitbean live support" : "Fruitbean chat assistant"}
 				>
 					<div className="chatwidget-header">
 						<div className="chatwidget-header-info">
-							<span
-								className="chatwidget-droplet chatwidget-droplet--sm"
-								aria-hidden="true"
-							></span>
+							{live ? (
+								<span
+									className="chatwidget-liveavatar chatwidget-liveavatar--sm"
+									aria-hidden="true"
+								>
+									{claimedByName ? getInitials(claimedByName) : "🙋"}
+								</span>
+							) : (
+								<span
+									className="chatwidget-droplet chatwidget-droplet--sm"
+									aria-hidden="true"
+								></span>
+							)}
 
-							<div>
-								<div className="chatwidget-title">
-									Fruitbean Assistant
+							<div style={{ minWidth: 0 }}>
+								<div className="chatwidget-title-row">
+									<span className="chatwidget-title">{headerTitle}</span>
+									{live && <span className="chatwidget-live-chip">LIVE</span>}
 								</div>
 								<div className="chatwidget-subtitle">
-									{status === "human"
-										? `Chatting with ${claimedByName || "our team"}`
-										: status === "awaiting_human"
-										? "Connecting you to our team…"
-										: "Usually replies in a minute"}
+									{connectionIssue && <span className="chatwidget-reconnect-dot" />}
+									{headerSubtitle}
 								</div>
 							</div>
 						</div>
@@ -305,12 +361,20 @@ export default function ChatWidget() {
 									key={i}
 									className={`chatwidget-row chatwidget-row--${m.role}`}
 								>
-									{m.role === "bot" && (
-										<span
-											className="chatwidget-droplet chatwidget-droplet--xs"
-											aria-hidden="true"
-										></span>
-									)}
+									{m.role === "bot" &&
+										(live ? (
+											<span
+												className="chatwidget-liveavatar chatwidget-liveavatar--xs"
+												aria-hidden="true"
+											>
+												{getInitials(m.from)}
+											</span>
+										) : (
+											<span
+												className="chatwidget-droplet chatwidget-droplet--xs"
+												aria-hidden="true"
+											></span>
+										))}
 
 									<div
 										className={`chatwidget-bubble chatwidget-bubble--${m.role}`}
@@ -362,6 +426,8 @@ export default function ChatWidget() {
 							placeholder={
 								status === "closed"
 									? "This conversation has ended…"
+									: live
+									? "Message our team…"
 									: "Ask about renting a printer…"
 							}
 							aria-label="Type a message"
@@ -381,18 +447,23 @@ export default function ChatWidget() {
 			)}
 
 			<button
-				className="chatwidget-toggle"
+				className={`chatwidget-toggle${live ? " chatwidget-toggle--live" : ""}`}
 				onClick={() => setOpen((o) => !o)}
 				aria-label={open ? "Close chat" : "Open chat"}
 			>
-				<span
-					className="chatwidget-droplet chatwidget-droplet--lg"
-					aria-hidden="true"
-				></span>
-
-				{!open && (
-					<span className="chatwidget-toggle-badge">1</span>
+				{live ? (
+					<span className="chatwidget-liveavatar chatwidget-liveavatar--sm" aria-hidden="true">
+						{claimedByName ? getInitials(claimedByName) : "🙋"}
+					</span>
+				) : (
+					<span
+						className="chatwidget-droplet chatwidget-droplet--lg"
+						aria-hidden="true"
+					></span>
 				)}
+
+				{!open && live && <span className="chatwidget-toggle-livedot" aria-hidden="true" />}
+				{!open && !live && <span className="chatwidget-toggle-badge">1</span>}
 			</button>
 		</div>
 	);

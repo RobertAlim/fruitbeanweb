@@ -246,7 +246,7 @@ export default function AdminChatsPage() {
           </div>
         </div>
 
-        <div className="chats-layout">
+        <div className={`chats-layout${activeId ? ' has-active' : ''}`}>
           <div className="chats-list">
             {conversations.length === 0 && (
               <div className="no-results">
@@ -282,11 +282,17 @@ export default function AdminChatsPage() {
           <div className="chat-panel">
             {activeLoading ? (
               <div className="chat-panel-empty">
+                <button type="button" className="chat-back-btn" onClick={() => setActiveId(null)}>
+                  ← Back to chats
+                </button>
                 <div style={{ fontSize: '32px' }}>💬</div>
                 <div>Opening conversation…</div>
               </div>
             ) : activeError ? (
               <div className="chat-panel-empty">
+                <button type="button" className="chat-back-btn" onClick={() => setActiveId(null)}>
+                  ← Back to chats
+                </button>
                 <div style={{ fontSize: '32px' }}>⚠️</div>
                 <div>{activeError}</div>
                 <button className="btn-secondary" onClick={() => openConversation(activeId)}>
@@ -302,6 +308,9 @@ export default function AdminChatsPage() {
               <>
                 <div className="chat-panel-header">
                   <div>
+                    <button type="button" className="chat-back-btn" onClick={() => setActiveId(null)}>
+                      ← Back to chats
+                    </button>
                     <div className="chat-panel-title">{activeLabel}</div>
                     <div className="chat-panel-sub">
                       {activeConversation.visitor_email || 'No email on file'} · {STATUS_LABEL[activeConversation.status]}

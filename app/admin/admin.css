@@ -951,7 +951,20 @@
   .admin-page .stats-strip { grid-template-columns: repeat(3, 1fr); }
 }
 @media (max-width: 768px) {
-  .admin-page .admin-header { padding: 0 20px; }
+  /* ─── Header: was a fixed 70px-tall row that never wrapped, so on
+     narrow phones the logo + Live Chat link + avatar + Change
+     Password + Logout buttons all fought for space and either got
+     clipped or forced the whole page to scroll sideways. Let it wrap
+     onto a second line and shrink the buttons instead. ─── */
+  .admin-page .admin-header {
+    padding: 10px 16px;
+    height: auto;
+    flex-wrap: wrap;
+    row-gap: 10px;
+  }
+  .admin-page .header-right { flex-wrap: wrap; gap: 8px; row-gap: 8px; }
+  .admin-page .header-right .btn-secondary,
+  .admin-page .header-right .btn-logout { padding: 7px 10px; font-size: 12px; }
   .admin-page .admin-main   { padding: 20px; }
   .admin-page .stats-strip  { grid-template-columns: repeat(2, 1fr); }
   .admin-page .topbar       { flex-direction: column; align-items: flex-start; }
@@ -959,6 +972,19 @@
   .admin-page .search-input { width: 100%; }
   .admin-page .header-user .user-info { display: none; }
   .admin-page .admin-badge  { display: none; }
+
+  /* ─── Live Chat (admin/chats): the list + panel were a fixed-width
+     flex row that never adapted — on phones the 320px conversation
+     list alone nearly filled the screen, leaving almost nothing for
+     the actual chat panel. Stack them: show the list full-width,
+     and only show the panel (full-width, with a Back button) once a
+     conversation is actually opened. ─── */
+  .admin-page .chats-layout { flex-direction: column; height: auto; }
+  .admin-page .chats-list { width: 100%; max-height: 50vh; }
+  .admin-page .chat-panel { min-height: 60vh; }
+  .admin-page .chats-layout.has-active .chats-list { display: none; }
+  .admin-page .chats-layout:not(.has-active) .chat-panel { display: none; }
+  .admin-page .chat-back-btn { display: inline-flex !important; }
 }
 
 /* ─── Append to admin.css ───────────────────────────────────────── */

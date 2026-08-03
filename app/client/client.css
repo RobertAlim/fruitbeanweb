@@ -716,7 +716,19 @@
 
 /* ─── Responsive ─── */
 @media (max-width: 768px) {
-  .client-page .client-header { padding: 0 20px; }
+  /* ─── Header: fixed 70px-tall row with no wrap — logo + avatar +
+     Change Password + Logout buttons couldn't all fit on a phone
+     width, so it either clipped or forced sideways scrolling on the
+     whole page. Let it wrap and shrink the buttons instead. ─── */
+  .client-page .client-header {
+    padding: 10px 16px;
+    height: auto;
+    flex-wrap: wrap;
+    row-gap: 10px;
+  }
+  .client-page .header-right { flex-wrap: wrap; gap: 8px; row-gap: 8px; }
+  .client-page .header-right .btn-secondary,
+  .client-page .header-right .btn-logout { padding: 7px 10px; font-size: 12px; }
   .client-page .client-main   { padding: 20px; }
   .client-page .stats-strip   { grid-template-columns: repeat(2, 1fr); }
   .client-page .topbar        { flex-direction: column; align-items: flex-start; }

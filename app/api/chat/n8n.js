@@ -18,6 +18,14 @@
 // flip the conversation into "awaiting_human" mode. If your workflow doesn't
 // send it, visitors can still always reach a human via the "Talk to a
 // person" button in the widget, which calls /api/chat/escalate directly.
+//
+// Request body sent to n8n: { messages, account }
+// "account" is null for anonymous visitors. If the visitor is signed in as
+// an existing client, it's { clientId, companyName, email, contactNumber,
+// companyAddress } — this lets the AI Agent recognize them as an existing
+// account instead of treating every chat as a brand-new company signing up,
+// and lets a follow-up printer request get attached to their account
+// instead of hitting the "looks like you already have an account" dead end.
 
 const WEBHOOK_URL =
   process.env.N8N_CHAT_WEBHOOK_URL ||
@@ -29,7 +37,7 @@ const WEBHOOK_URL =
 // chat reply but still well inside typical serverless function limits.
 const REQUEST_TIMEOUT_MS = 20_000;
 
-export async function callN8nChat({ messages }) {
+export async function callN8nChat({ messages, account = null }) {
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
 
@@ -38,7 +46,7 @@ export async function callN8nChat({ messages }) {
     res = await fetch(WEBHOOK_URL, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ messages }),
+      body: JSON.stringify({ messages, account }),
       signal: controller.signal,
     });
   } catch (err) {

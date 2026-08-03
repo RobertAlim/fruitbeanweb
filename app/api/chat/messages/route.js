@@ -7,6 +7,7 @@ import {
 } from '../conversations';
 import { callN8nChat } from '../n8n';
 import { notifyAdminsOfEscalation } from '../adminNotify';
+import { getClientAccountForChat } from '../accounts';
 
 export const runtime = 'nodejs';
 
@@ -169,10 +170,16 @@ export async function POST(req) {
       .filter(m => m.sender_type === 'visitor' || m.sender_type === 'ai')
       .map(m => ({ role: m.sender_type === 'ai' ? 'bot' : 'user', text: m.text }));
 
+    // If this visitor is signed in, tell the AI which account it's
+    // talking to — otherwise every chat looks like a brand-new company.
+    const account = conversation.client_id
+      ? await getClientAccountForChat(conversation.client_id)
+      : null;
+
     let finalConversation = conversation;
 
     try {
-      const { reply, escalate } = await callN8nChat({ messages: n8nMessages });
+      const { reply, escalate } = await callN8nChat({ messages: n8nMessages, account });
 
       if (escalate) {
         // The AI (via n8n) thinks this needs a human — but per the

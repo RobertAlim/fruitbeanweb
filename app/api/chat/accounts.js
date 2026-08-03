@@ -7,6 +7,120 @@ function generateTempPassword() {
   return crypto.randomBytes(9).toString('base64url');
 }
 
+// Used when building the payload sent to the n8n chat AI, so it knows
+// which account (if any) the visitor is already signed in as, instead of
+// treating every conversation as a brand-new company signing up.
+export async function getClientAccountForChat(clientId) {
+  if (!clientId) return null;
+  let pool;
+  try {
+    pool = getPool();
+  } catch (err) {
+    console.error('getClientAccountForChat: failed to get DB pool:', err);
+    return null;
+  }
+
+  try {
+    const { rows } = await pool.query(
+      `SELECT client_id, company_name, email, company_number, company_address
+       FROM clients WHERE client_id = $1 LIMIT 1`,
+      [clientId]
+    );
+    if (!rows[0]) return null;
+    const c = rows[0];
+    return {
+      clientId: c.client_id,
+      companyName: c.company_name,
+      email: c.email,
+      contactNumber: c.company_number,
+      companyAddress: c.company_address,
+    };
+  } catch (err) {
+    console.error('getClientAccountForChat: query failed:', err);
+    return null;
+  }
+}
+
+// Attaches new printer rentals to an EXISTING client (someone already signed
+// in, requesting another printer through the chat) — no new account, no
+// welcome email, no duplicate-account check needed since we already know
+// exactly who they are.
+export async function addRentalsToExistingClient({ clientId, printers, rentalYears }) {
+  let pool;
+  try {
+    pool = getPool();
+  } catch (err) {
+    console.error('addRentalsToExistingClient: failed to get DB pool:', err);
+    return { success: false, message: 'Database connection unavailable.' };
+  }
+
+  let clientRow;
+  try {
+    const { rows } = await pool.query(
+      'SELECT client_id, email, company_name FROM clients WHERE client_id = $1',
+      [clientId]
+    );
+    clientRow = rows[0];
+  } catch (err) {
+    console.error('addRentalsToExistingClient: failed to look up client:', err);
+    return { success: false, message: 'Failed to look up your account.' };
+  }
+
+  if (!clientRow) {
+    return { success: false, message: 'We could not find your account. Please log in again.' };
+  }
+
+  let client;
+  try {
+    client = await pool.connect();
+  } catch (err) {
+    console.error('addRentalsToExistingClient: failed to acquire DB client:', err);
+    return { success: false, message: 'Database connection unavailable.' };
+  }
+
+  try {
+    await client.query('BEGIN');
+
+    const startDate = new Date();
+    const endDate = new Date(startDate);
+    endDate.setFullYear(endDate.getFullYear() + rentalYears);
+
+    for (const item of printers) {
+      const { rows: printerRows } = await client.query(
+        'SELECT printer_id FROM printers WHERE printer_model = $1',
+        [item.model]
+      );
+      if (printerRows.length === 0) {
+        throw new Error(`Printer model "${item.model}" not found in printers table.`);
+      }
+      const printerId = printerRows[0].printer_id;
+
+      for (let i = 0; i < item.quantity; i++) {
+        await client.query(
+          `INSERT INTO rentals (client_id, printer_id, start_date, end_date, status, created_at)
+           VALUES ($1, $2, $3, $4, 'Pending', NOW())`,
+          [clientId, printerId, startDate, endDate]
+        );
+      }
+    }
+
+    await client.query('COMMIT');
+
+    return {
+      success: true,
+      clientId: clientRow.client_id,
+      email: clientRow.email,
+      companyName: clientRow.company_name,
+    };
+  } catch (err) {
+    await client.query('ROLLBACK');
+    console.error('addRentalsToExistingClient error:', err);
+    return { success: false, message: 'Something went wrong adding your rental.' };
+  } finally {
+    client.release();
+  }
+}
+
 export async function createClientAccount({ inquiryId }) {
   // ── 1. Get pool ──────────────────────────────────────────────────────────
   let pool;

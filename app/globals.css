@@ -1111,4 +1111,49 @@ section { padding: 70px 60px; }
   .slide5-wrap { flex-direction: column; padding: 0 24px; gap: 20px; }
   .slide5-photo { width: 180px; height: 180px; }
   .footer-wrap { padding: 2rem 1.5rem; }
+
+  /* ─── Slide 3 (Top 3 Printers): each row was cramming a fixed-size
+     image + badge + title + description + price all onto one line,
+     which no longer fit once the JSX's hardcoded pixel sizes were
+     removed — stack image above info instead. ─── */
+  .top-printer-row { flex-direction: column; align-items: center; gap: 8px; }
+  .top-printer-row--right .top-printer-img { order: -1; }
+  .top-printer-img { width: 84px; }
+  .top-printer-desc {
+    width: 100%;
+    height: auto;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 6px;
+    padding: 12px 16px;
+  }
+  .top-printer-desc-text { width: 100%; }
+  .top-printer-desc h3 { white-space: normal; }
+  .top-printer-desc p { max-width: 100%; }
+  .top-printer-rate { margin-left: 0; }
+
+  /* ─── Slide 4 (Services collage): the desktop layout positions the
+     photo collage with `width: calc(100% - 380px)`, which goes
+     NEGATIVE on any phone under ~380px wide — that's why
+     MAINTENANCE-1/2 and the rest were overlapping/cut off. Switch to
+     a simple stacked grid that always fits, and let the slide scroll
+     internally if the six photos + text run taller than the hero. ─── */
+  .slide-4 { align-items: flex-start; overflow-y: auto; -webkit-overflow-scrolling: touch; padding: 24px; }
+  .slide4-wrap { flex-direction: column; align-items: stretch; padding: 0; gap: 16px; height: auto; }
+  .slide4-left { width: 100%; }
+  .slide4-collage {
+    position: static;
+    width: 100%;
+    height: auto;
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 8px;
+  }
+  .s4-photo {
+    position: static;
+    width: 100% !important;
+    height: 28vw !important;
+    max-height: 120px;
+    transform: none !important;
+  }
 }

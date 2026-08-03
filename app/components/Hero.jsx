@@ -85,10 +85,10 @@ export default function Hero() {
 
               {/* Row 1 */}
               <div className="top-printer-row top-printer-row--left">
-                <div className="top-printer-img" style={{ width: '120px', height: '120px' }}>
+                <div className="top-printer-img">
                   <img src="TOP1.png" alt="Epson L3210" />
                 </div>
-                <div className="top-printer-desc" style={{ padding: '18px 26px', gap: '16px' }}>
+                <div className="top-printer-desc">
                 <span className="top-printer-badge">#1</span>
                 <div className="top-printer-desc-text">
                   <h3>Epson L3210</h3>
@@ -100,31 +100,31 @@ export default function Hero() {
 
               {/* Row 2 */}
               <div className="top-printer-row top-printer-row--right">
-                <div className="top-printer-desc" style={{ padding: '16px 24px', gap: '14px' }}>
-                  <span className="top-printer-badge" style={{ background: '#00aeef', fontSize: '13px', padding: '4px 12px', borderRadius: '6px' }}>#2</span>
-                  <div style={{ flex: 1, minWidth: 0 }}>
-                    <h3 style={{ fontSize: '17px', marginBottom: '3px' }}>Epson L3110</h3>
-                    <p style={{ fontSize: '12px' }}>High-speed color printing built for busy offices. Crisp output, fast turnaround.</p>
+                <div className="top-printer-desc">
+                  <span className="top-printer-badge" style={{ background: '#00aeef' }}>#2</span>
+                  <div className="top-printer-desc-text">
+                    <h3>Epson L3110</h3>
+                    <p>High-speed color printing built for busy offices. Crisp output, fast turnaround.</p>
                   </div>
-                  <span className="top-printer-rate" style={{ fontSize: '18px' }}>₱1,500<small>/mo</small></span>
+                  <span className="top-printer-rate">₱1,500<small>/mo</small></span>
                 </div>
-                <div className="top-printer-img" style={{ width: '120px', height: '120px' }}>
+                <div className="top-printer-img">
                   <img src="TOP2.png" alt="Epson L3110" />
                 </div>
               </div>
 
               {/* Row 3 */}
               <div className="top-printer-row top-printer-row--left">
-                <div className="top-printer-img" style={{ width: '120px', height: '120px' }}>
+                <div className="top-printer-img">
                   <img src="TOP3.png" alt="Epson L121" />
                 </div>
-                <div className="top-printer-desc" style={{ padding: '16px 24px', gap: '14px' }}>
-                  <span className="top-printer-badge" style={{ background: '#f5c518', color: '#1a1a2e', fontSize: '13px', padding: '4px 12px', borderRadius: '6px' }}>#3</span>
-                  <div style={{ flex: 1, minWidth: 0 }}>
-                    <h3 style={{ fontSize: '17px', marginBottom: '3px' }}>Epson L121</h3>
-                    <p style={{ fontSize: '12px' }}>Reliable everyday printing at an unbeatable price. Great for students and small offices.</p>
+                <div className="top-printer-desc">
+                  <span className="top-printer-badge" style={{ background: '#f5c518', color: '#1a1a2e' }}>#3</span>
+                  <div className="top-printer-desc-text">
+                    <h3>Epson L121</h3>
+                    <p>Reliable everyday printing at an unbeatable price. Great for students and small offices.</p>
                   </div>
-                  <span className="top-printer-rate" style={{ fontSize: '18px' }}>₱1,500<small>/mo</small></span>
+                  <span className="top-printer-rate">₱1,500<small>/mo</small></span>
                 </div>
               </div>
 

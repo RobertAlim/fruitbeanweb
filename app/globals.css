@@ -190,6 +190,39 @@ nav {
 }
 .nav-cta:hover::before { transform: translateX(100%); }
 
+/* ─── NAV: MOBILE MENU (hidden on desktop, shown via media query) ─── */
+.nav-burger {
+  display: none;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  gap: 5px;
+  width: 40px;
+  height: 40px;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  z-index: 210;
+  flex-shrink: 0;
+}
+.nav-burger span {
+  width: 22px;
+  height: 2px;
+  border-radius: 2px;
+  background: var(--dark);
+  transition: transform 0.25s ease, opacity 0.2s ease;
+}
+.nav-burger.open span:nth-child(1) { transform: translateY(7px) rotate(45deg); }
+.nav-burger.open span:nth-child(2) { opacity: 0; }
+.nav-burger.open span:nth-child(3) { transform: translateY(-7px) rotate(-45deg); }
+
+.nav-mobile-menu {
+  display: none;
+}
+.nav-mobile-backdrop {
+  display: none;
+}
+
 /* ─── NAV: LOGGED-IN USER AREA ─── */
 .nav-user {
   display: flex;
@@ -1016,8 +1049,59 @@ section { padding: 70px 60px; }
 
 /* ─── RESPONSIVE ─── */
 @media (max-width: 768px) {
-  nav { padding: 0 20px; }
-  .nav-links, .nav-cta { display: none; }
+  nav { padding: 0 16px; position: relative; }
+
+  /* Hide the desktop link row + inline actions, replace with hamburger */
+  .nav-links, .nav-desktop-actions { display: none; }
+  .nav-burger { display: flex; }
+
+  .nav-mobile-menu {
+    display: flex;
+    flex-direction: column;
+    gap: 18px;
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    background: var(--cream);
+    border-bottom: 2px solid #f0f0f0;
+    padding: 20px;
+    box-shadow: 0 12px 24px rgba(0,0,0,0.12);
+    transform: translateY(-8px);
+    opacity: 0;
+    pointer-events: none;
+    transition: transform 0.22s ease, opacity 0.22s ease;
+    z-index: 205;
+  }
+  .nav-mobile-menu.open {
+    transform: translateY(0);
+    opacity: 1;
+    pointer-events: auto;
+  }
+  .nav-mobile-links { list-style: none; display: flex; flex-direction: column; gap: 4px; }
+  .nav-mobile-links a {
+    display: block;
+    padding: 12px 8px;
+    font-size: 16px;
+    font-weight: 600;
+    color: var(--text);
+    text-decoration: none;
+    border-bottom: 1px solid #f0f0f0;
+  }
+  .nav-mobile-links a.active { color: var(--green); }
+  .nav-mobile-user { display: flex; flex-direction: column; gap: 12px; align-items: stretch; }
+  .nav-mobile-user .nav-user__name { text-align: center; }
+  .nav-mobile-menu .nav-cta { width: 100%; text-align: center; padding: 14px 22px; }
+
+  .nav-mobile-backdrop {
+    display: block;
+    position: fixed;
+    inset: 0;
+    top: 80px;
+    background: rgba(0,0,0,0.25);
+    z-index: 199;
+  }
+
   section { padding: 50px 24px; }
   .why-section { grid-template-columns: 1fr; gap: 32px; padding: 50px 24px; }
   .hero { height: 70vh; }
@@ -1027,4 +1111,36 @@ section { padding: 70px 60px; }
   .slide5-wrap { flex-direction: column; padding: 0 24px; gap: 20px; }
   .slide5-photo { width: 180px; height: 180px; }
   .footer-wrap { padding: 2rem 1.5rem; }
+
+  /* ── Mobile performance: the decorative blurred blobs and animated
+     ambient wash are the biggest source of jank on phone GPUs (large
+     animated `filter`/`blur` layers force constant repaint). Drop them
+     on small screens where they're barely visible anyway. ── */
+  .slide-bg-blobs { display: none; }
+  body::before { animation: none; }
+
+  /* backdrop-filter blur is expensive on mobile Safari/Chrome; swap for
+     a plain translucent background at this breakpoint */
+  .slide-eyebrow, .arrow-btn { backdrop-filter: none; background: rgba(20,20,35,0.55); }
+
+  /* Faster, cheaper tap feedback instead of hover-style transforms */
+  a, button { -webkit-tap-highlight-color: transparent; }
+  .btn-primary:active, .btn-outline:active, .nav-cta:active { transform: scale(0.97); }
+}
+
+/* ─── Respect reduced-motion preference everywhere ─── */
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+  *, *::before, *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+  }
+}
+
+/* Improve tap responsiveness / avoid 300ms delay on all touch devices */
+@media (hover: none) and (pointer: coarse) {
+  a, button, .btn-primary, .btn-outline, .nav-cta, .arrow-btn, .dot {
+    touch-action: manipulation;
+  }
 }

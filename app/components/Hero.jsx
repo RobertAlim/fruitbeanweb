@@ -86,7 +86,7 @@ export default function Hero() {
               {/* Row 1 */}
               <div className="top-printer-row top-printer-row--left">
                 <div className="top-printer-img" style={{ width: '120px', height: '120px' }}>
-                  <img src="TOP1.png" alt="Epson L3210" />
+                  <img src="TOP1.png" alt="Epson L3210" loading="lazy" decoding="async" width="120" height="120" />
                 </div>
                 <div className="top-printer-desc" style={{ padding: '18px 26px', gap: '16px' }}>
                 <span className="top-printer-badge">#1</span>
@@ -109,14 +109,14 @@ export default function Hero() {
                   <span className="top-printer-rate" style={{ fontSize: '18px' }}>₱1,500<small>/mo</small></span>
                 </div>
                 <div className="top-printer-img" style={{ width: '120px', height: '120px' }}>
-                  <img src="TOP2.png" alt="Epson L3110" />
+                  <img src="TOP2.png" alt="Epson L3110" loading="lazy" decoding="async" width="120" height="120" />
                 </div>
               </div>
 
               {/* Row 3 */}
               <div className="top-printer-row top-printer-row--left">
                 <div className="top-printer-img" style={{ width: '120px', height: '120px' }}>
-                  <img src="TOP3.png" alt="Epson L121" />
+                  <img src="TOP3.png" alt="Epson L121" loading="lazy" decoding="async" width="120" height="120" />
                 </div>
                 <div className="top-printer-desc" style={{ padding: '16px 24px', gap: '14px' }}>
                   <span className="top-printer-badge" style={{ background: '#f5c518', color: '#1a1a2e', fontSize: '13px', padding: '4px 12px', borderRadius: '6px' }}>#3</span>
@@ -159,12 +159,12 @@ export default function Hero() {
               </ul>
             </div>
             <div className="slide4-collage">
-              <div className="s4-photo s4-photo-1"><img src="images/TECH-SUPPORT.jpg" alt="Tech Support" /></div>
-              <div className="s4-photo s4-photo-2"><img src="images/REPAIR.jpg" alt=" Repair" /></div>
-              <div className="s4-photo s4-photo-3"><img src="images/MAINTENANCE-1.jpg" alt="Maintenance" /></div>
-              <div className="s4-photo s4-photo-4"><img src="images/INK-REFILL.jpg" alt="Ink Supply" /></div>
-              <div className="s4-photo s4-photo-5"><img src="images/SETUP.jpg" alt="SETUP" /></div>
-              <div className="s4-photo s4-photo-6"><img src="images/MAINTENANCE-2.jpg" alt="Delivery" /></div>
+              <div className="s4-photo s4-photo-1"><img src="images/TECH-SUPPORT.jpg" alt="Tech Support" loading="lazy" decoding="async" /></div>
+              <div className="s4-photo s4-photo-2"><img src="images/REPAIR.jpg" alt=" Repair" loading="lazy" decoding="async" /></div>
+              <div className="s4-photo s4-photo-3"><img src="images/MAINTENANCE-1.jpg" alt="Maintenance" loading="lazy" decoding="async" /></div>
+              <div className="s4-photo s4-photo-4"><img src="images/INK-REFILL.jpg" alt="Ink Supply" loading="lazy" decoding="async" /></div>
+              <div className="s4-photo s4-photo-5"><img src="images/SETUP.jpg" alt="SETUP" loading="lazy" decoding="async" /></div>
+              <div className="s4-photo s4-photo-6"><img src="images/MAINTENANCE-2.jpg" alt="Delivery" loading="lazy" decoding="async" /></div>
             </div>
           </div>
         </div>
@@ -193,7 +193,7 @@ export default function Hero() {
               </div>
             </div>
             <div className="slide5-photo">
-              <img src="images/our-ink.jpg" alt="Fruitbean Premium Ink" />
+              <img src="images/our-ink.jpg" alt="Fruitbean Premium Ink" loading="lazy" decoding="async" />
               <div className="slide5-photo-badge"><span>✦</span> Premium Quality Ink</div>
             </div>
           </div>

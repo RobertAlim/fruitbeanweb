@@ -61,18 +61,22 @@ body {
 body::before {
   content: '';
   position: fixed;
-  inset: 0;
+  inset: -10%;
   background:
-    radial-gradient(ellipse 700px 500px at 15% 20%, rgba(0,245,255,0.035) 0%, transparent 70%),
-    radial-gradient(ellipse 600px 400px at 85% 75%, rgba(255,0,212,0.03) 0%, transparent 70%),
-    radial-gradient(ellipse 500px 350px at 55% 55%, rgba(57,255,20,0.025) 0%, transparent 70%);
+    radial-gradient(ellipse 700px 500px at 15% 20%, rgba(0,245,255,0.05) 0%, transparent 70%),
+    radial-gradient(ellipse 600px 400px at 85% 75%, rgba(255,0,212,0.045) 0%, transparent 70%),
+    radial-gradient(ellipse 500px 350px at 55% 55%, rgba(57,255,20,0.035) 0%, transparent 70%);
   pointer-events: none;
   z-index: 0;
   animation: ambientDrift 18s ease-in-out infinite alternate;
+  will-change: transform;
 }
+/* Cheap, compositor-only drift — moves/fades the already-painted gradient
+   layer instead of recalculating `filter` every frame like before. Looks
+   just as alive, costs almost nothing on a phone GPU. */
 @keyframes ambientDrift {
-  from { filter: hue-rotate(0deg) brightness(1); }
-  to   { filter: hue-rotate(50deg) brightness(1.04); }
+  from { transform: translate3d(0,0,0) scale(1);      opacity: 0.85; }
+  to   { transform: translate3d(2%,-2%,0) scale(1.06); opacity: 1;    }
 }
 
 /* Custom text selection */
@@ -298,12 +302,22 @@ nav {
   opacity: 0.32;
   filter: blur(55px);
   animation: blobMorph 9s ease-in-out infinite alternate;
+  animation-play-state: paused;
+  will-change: transform;
 }
+/* Only the currently-visible slide's blobs actually animate — the other
+   4 slides' worth of blobs sit paused offscreen instead of all 10
+   running at once. Same visual result, a fifth of the animation work. */
+.slide-active .blob { animation-play-state: running; }
+
+/* Transform-only keyframes: no `border-radius` step (that one forces a
+   repaint every frame). Translate/scale/rotate are compositor-only, so
+   this is essentially free even on low-end phones. */
 @keyframes blobMorph {
-  0%   { transform: translate(0,0) scale(1) rotate(0deg);       border-radius: 50% 50% 50% 50%; }
-  33%  { transform: translate(22px,-18px) scale(1.12) rotate(6deg);  border-radius: 42% 58% 55% 45%; }
-  66%  { transform: translate(-16px,22px) scale(0.93) rotate(-4deg); border-radius: 58% 42% 40% 60%; }
-  100% { transform: translate(32px,12px) scale(1.15) rotate(10deg);  border-radius: 45% 55% 62% 38%; }
+  0%   { transform: translate3d(0,0,0)         scale(1)    rotate(0deg); }
+  33%  { transform: translate3d(22px,-18px,0)  scale(1.12) rotate(6deg); }
+  66%  { transform: translate3d(-16px,22px,0)  scale(0.93) rotate(-4deg); }
+  100% { transform: translate3d(32px,12px,0)   scale(1.15) rotate(10deg); }
 }
 
 /* ─── SLIDE CONTENT ─── */
@@ -1112,16 +1126,12 @@ section { padding: 70px 60px; }
   .slide5-photo { width: 180px; height: 180px; }
   .footer-wrap { padding: 2rem 1.5rem; }
 
-  /* ── Mobile performance: the decorative blurred blobs and animated
-     ambient wash are the biggest source of jank on phone GPUs (large
-     animated `filter`/`blur` layers force constant repaint). Drop them
-     on small screens where they're barely visible anyway. ── */
-  .slide-bg-blobs { display: none; }
-  body::before { animation: none; }
+  /* Mobile: keep the blobs (they're transform-only now, cheap to run),
+     just shrink the blur radius since blur cost scales with size. */
+  .blob { filter: blur(28px); }
 
-  /* backdrop-filter blur is expensive on mobile Safari/Chrome; swap for
-     a plain translucent background at this breakpoint */
-  .slide-eyebrow, .arrow-btn { backdrop-filter: none; background: rgba(20,20,35,0.55); }
+  /* backdrop-filter on these is fine on mobile too — they're small
+     badges, not full-screen layers, so the blur cost is trivial. */
 
   /* Faster, cheaper tap feedback instead of hover-style transforms */
   a, button { -webkit-tap-highlight-color: transparent; }

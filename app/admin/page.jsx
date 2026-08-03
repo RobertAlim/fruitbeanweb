@@ -258,14 +258,16 @@ export default function AdminPage() {
 
   /* ── Confirm popup ── */
   const CONFIRM_COPY = {
-    problem: { title: '⚠️ Flag as Problem?', body: m => `This marks ${m} as having a problem.`,    confirmLabel: 'Yes, Flag It',    confirmBg: '#b45309' },
-    ended:   { title: '📦 End This Rental?', body: m => `This ends the rental for ${m}.`,           confirmLabel: 'Yes, End Rental', confirmBg: '#475569' },
+    problem: { title: '⚠️ Flag as Problem?',      body: m => `This marks ${m} as having a problem.`,                    confirmLabel: 'Yes, Flag It',    confirmBg: '#b45309' },
+    ended:   { title: '📦 End This Rental?',       body: m => `This ends the rental for ${m}.`,                          confirmLabel: 'Yes, End Rental', confirmBg: '#475569' },
+    deny:    { title: '🚫 Deny Rental Request?',   body: m => `This will deny the pending rental request for ${m}. The client will be notified.`, confirmLabel: 'Yes, Deny Request', confirmBg: '#dc2626' },
   };
   function openConfirm(rental, action) { setConfirmTarget({ rental, action }); }
   function closeConfirm() { setConfirmTarget(null); }
   function runConfirmedAction() {
     if (!confirmTarget) return;
-    handleStatusChange(confirmTarget.rental.rental_id, confirmTarget.action);
+    const statusToSet = confirmTarget.action === 'deny' ? 'ended' : confirmTarget.action;
+    handleStatusChange(confirmTarget.rental.rental_id, statusToSet);
     closeConfirm();
   }
 
@@ -792,13 +794,22 @@ export default function AdminPage() {
                               {/* Action buttons */}
                               <div style={{ marginTop: '10px', display: 'flex', flexDirection: 'column', gap: '6px' }}>
                                 {rental.status === 'pending' && (
-                                  <button
-                                    className="btn-resolve"
-                                    style={{ width: '100%', fontSize: '12px', padding: '8px', background: '#16a34a' }}
-                                    onClick={() => handleStatusChange(rental.rental_id, 'active')}
-                                  >
-                                    ✅ Activate Rental
-                                  </button>
+                                  <>
+                                    <button
+                                      className="btn-resolve"
+                                      style={{ width: '100%', fontSize: '12px', padding: '8px', background: '#16a34a' }}
+                                      onClick={() => handleStatusChange(rental.rental_id, 'active')}
+                                    >
+                                      ✅ Activate Rental
+                                    </button>
+                                    <button
+                                      className="btn-resolve"
+                                      style={{ width: '100%', fontSize: '12px', padding: '8px', background: '#dc2626' }}
+                                      onClick={() => openConfirm(rental, 'deny')}
+                                    >
+                                      🚫 Deny Request
+                                    </button>
+                                  </>
                                 )}
                                 {rental.status === 'active' && (
                                   <>
@@ -965,13 +976,22 @@ export default function AdminPage() {
                           </span>
                           <span className={`status-badge ${rental.status}`}>{rental.status}</span>
                           {rental.status === 'pending' && (
-                            <button
-                              className="btn-resolve"
-                              style={{ padding: '5px 12px', fontSize: '11.5px', background: '#16a34a' }}
-                              onClick={() => handleStatusChange(rental.rental_id, 'active')}
-                            >
-                              ✅ Activate
-                            </button>
+                            <div style={{ display: 'flex', gap: '6px' }}>
+                              <button
+                                className="btn-resolve"
+                                style={{ padding: '5px 12px', fontSize: '11.5px', background: '#16a34a' }}
+                                onClick={() => handleStatusChange(rental.rental_id, 'active')}
+                              >
+                                ✅ Activate
+                              </button>
+                              <button
+                                className="btn-resolve"
+                                style={{ padding: '5px 12px', fontSize: '11.5px', background: '#dc2626' }}
+                                onClick={() => openConfirm(rental, 'deny')}
+                              >
+                                🚫 Deny
+                              </button>
+                            </div>
                           )}
                           {rental.status === 'active' && (
                             <div style={{ display: 'flex', gap: '6px' }}>

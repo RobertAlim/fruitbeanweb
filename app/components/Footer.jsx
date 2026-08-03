@@ -34,13 +34,13 @@ export default function Footer() {
         <h3>About Fruitbean Ink</h3>
         <p>Since 2015, Fruitbean Ink Refilling Station has been providing reliable, affordable, and high-quality ink refilling services to customers from both the North and South, serving schools, offices, and businesses.</p>
         <div className="footer-socials">
-          <a href="https://www.facebook.com/YourPage" target="_blank" rel="noopener" aria-label="Facebook">
+          <a href="https://www.facebook.com/FruitbeanInkRefillingStation/" target="_blank" rel="noopener" aria-label="Facebook">
             <svg viewBox="0 0 24 24"><path d="M18 2h-3a5 5 0 0 0-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 0 1 1-1h3z"/></svg>
           </a>
-          <a href="https://www.instagram.com/YourPage" target="_blank" rel="noopener" aria-label="Instagram">
+          <a href="https://www.instagram.com/fruitbeanrefillingstation/" target="_blank" rel="noopener" aria-label="Instagram">
             <svg viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2"><rect x="2" y="2" width="20" height="20" rx="5"/><path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"/><line x1="17.5" y1="6.5" x2="17.51" y2="6.5" strokeLinecap="round"/></svg>
           </a>
-          <a href="https://www.tiktok.com/@YourPage" target="_blank" rel="noopener" aria-label="TikTok">
+          <a href="https://www.tiktok.com/FruitbeanRefillingStation" target="_blank" rel="noopener" aria-label="TikTok">
             <svg viewBox="0 0 24 24" fill="#fff"><path d="M19.59 6.69a4.83 4.83 0 0 1-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 0 1-2.88 2.5 2.89 2.89 0 0 1-2.89-2.89 2.89 2.89 0 0 1 2.89-2.89c.28 0 .54.04.79.1V9.01a6.34 6.34 0 0 0-6.13 6.33 6.34 6.34 0 0 0 6.34 6.34 6.34 6.34 0 0 0 6.33-6.34V8.69a8.16 8.16 0 0 0 4.77 1.52V6.75a4.85 4.85 0 0 1-1-.06z"/></svg>
           </a>
         </div>

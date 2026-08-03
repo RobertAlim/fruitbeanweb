@@ -34,6 +34,7 @@ export default function ClientPage() {
   const [reportError, setReportError]               = useState('');
   const [clientId, setClientId]                     = useState(null);
   const [confirmingFix, setConfirmingFix]           = useState(null); // rental_id being confirmed
+  const [cancellingRental, setCancellingRental]     = useState(null); // rental_id being cancelled
   const [showHistoryModal, setShowHistoryModal]     = useState(false);
   const [showChangePassword, setShowChangePassword] = useState(false);
 
@@ -179,6 +180,22 @@ export default function ClientPage() {
       setRentals(prev => prev.map(r => r.rental_id === rental_id ? { ...r, ...data.rental } : r));
     } catch (err) { console.error('Failed to confirm fix:', err); }
     finally { setConfirmingFix(null); }
+  }
+
+  async function handleCancelRental(rental_id) {
+    if (!confirm('Cancel this pending rental request? This cannot be undone.')) return;
+    setCancellingRental(rental_id);
+    try {
+      const res = await fetch('/api/rentals', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ rental_id, status: 'ended' }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Failed to cancel');
+      setRentals(prev => prev.map(r => r.rental_id === rental_id ? { ...r, ...data.rental } : r));
+    } catch (err) { console.error('Failed to cancel rental:', err); }
+    finally { setCancellingRental(null); }
   }
 
   /* ── Rent Another Printer ── */
@@ -380,6 +397,23 @@ export default function ClientPage() {
                           contractStart={rental.contract_start}
                           contractEnd={rental.contract_end}
                         />
+                      )}
+
+                      {/* ── Pending: client can cancel ── */}
+                      {rental.status === 'pending' && (
+                        <div className="resolved-confirm-block">
+                          <div className="resolved-info-note">
+                            ⏳ Your request is awaiting approval from our team.
+                          </div>
+                          <button
+                            className="btn-report-again"
+                            style={{ background: '#dc2626', borderColor: '#dc2626', color: '#fff' }}
+                            onClick={() => handleCancelRental(rental.rental_id)}
+                            disabled={cancellingRental === rental.rental_id}
+                          >
+                            {cancellingRental === rental.rental_id ? 'Cancelling…' : '✖ Cancel Request'}
+                          </button>
+                        </div>
                       )}
 
                       {/* Technician assignment note (problem status) */}

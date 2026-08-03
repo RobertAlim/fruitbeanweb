@@ -148,7 +148,7 @@ export default function TabsSection() {
         <div className="modal" style={{ display: 'flex' }}>
           <div className="modal-content">
             <span className="close-btn" onClick={() => setModal(null)}>&times;</span>
-            <img src={`/images/${modal}.jpg`} alt={modal} />
+            <img src={`/images/${modal.replace(/\s+/g, "-")}.jpg`} alt={modal}/>
             <h2>{modal}</h2>
             <div className="printer-rate">₱{printers[modal]?.rate}/month</div>
             <p>{printers[modal]?.description}</p>

@@ -159,12 +159,12 @@ export default function Hero() {
               </ul>
             </div>
             <div className="slide4-collage">
-              <div className="s4-photo s4-photo-1"><img src="images/TECH SUPPORT.jpg" alt="Tech Support" /></div>
+              <div className="s4-photo s4-photo-1"><img src="images/TECH-SUPPORT.jpg" alt="Tech Support" /></div>
               <div className="s4-photo s4-photo-2"><img src="images/REPAIR.jpg" alt=" Repair" /></div>
               <div className="s4-photo s4-photo-3"><img src="images/Maintenance 1.jpg" alt="Maintenance" /></div>
-              <div className="s4-photo s4-photo-4"><img src="images/INK REFILL.jpg" alt="Ink Supply" /></div>
+              <div className="s4-photo s4-photo-4"><img src="images/INK-REFILL.jpg" alt="Ink Supply" /></div>
               <div className="s4-photo s4-photo-5"><img src="images/SETUP.jpg" alt="SETUP" /></div>
-              <div className="s4-photo s4-photo-6"><img src="images/MAINTENANCE 2.jpg" alt="Delivery" /></div>
+              <div className="s4-photo s4-photo-6"><img src="images/MAINTENANCE-2.jpg" alt="Delivery" /></div>
             </div>
           </div>
         </div>

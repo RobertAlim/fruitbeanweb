@@ -61,22 +61,18 @@ body {
 body::before {
   content: '';
   position: fixed;
-  inset: -10%;
+  inset: 0;
   background:
-    radial-gradient(ellipse 700px 500px at 15% 20%, rgba(0,245,255,0.05) 0%, transparent 70%),
-    radial-gradient(ellipse 600px 400px at 85% 75%, rgba(255,0,212,0.045) 0%, transparent 70%),
-    radial-gradient(ellipse 500px 350px at 55% 55%, rgba(57,255,20,0.035) 0%, transparent 70%);
+    radial-gradient(ellipse 700px 500px at 15% 20%, rgba(0,245,255,0.035) 0%, transparent 70%),
+    radial-gradient(ellipse 600px 400px at 85% 75%, rgba(255,0,212,0.03) 0%, transparent 70%),
+    radial-gradient(ellipse 500px 350px at 55% 55%, rgba(57,255,20,0.025) 0%, transparent 70%);
   pointer-events: none;
   z-index: 0;
   animation: ambientDrift 18s ease-in-out infinite alternate;
-  will-change: transform;
 }
-/* Cheap, compositor-only drift — moves/fades the already-painted gradient
-   layer instead of recalculating `filter` every frame like before. Looks
-   just as alive, costs almost nothing on a phone GPU. */
 @keyframes ambientDrift {
-  from { transform: translate3d(0,0,0) scale(1);      opacity: 0.85; }
-  to   { transform: translate3d(2%,-2%,0) scale(1.06); opacity: 1;    }
+  from { filter: hue-rotate(0deg) brightness(1); }
+  to   { filter: hue-rotate(50deg) brightness(1.04); }
 }
 
 /* Custom text selection */
@@ -303,21 +299,17 @@ nav {
   filter: blur(55px);
   animation: blobMorph 9s ease-in-out infinite alternate;
   animation-play-state: paused;
-  will-change: transform;
 }
 /* Only the currently-visible slide's blobs actually animate — the other
    4 slides' worth of blobs sit paused offscreen instead of all 10
    running at once. Same visual result, a fifth of the animation work. */
 .slide-active .blob { animation-play-state: running; }
 
-/* Transform-only keyframes: no `border-radius` step (that one forces a
-   repaint every frame). Translate/scale/rotate are compositor-only, so
-   this is essentially free even on low-end phones. */
 @keyframes blobMorph {
-  0%   { transform: translate3d(0,0,0)         scale(1)    rotate(0deg); }
-  33%  { transform: translate3d(22px,-18px,0)  scale(1.12) rotate(6deg); }
-  66%  { transform: translate3d(-16px,22px,0)  scale(0.93) rotate(-4deg); }
-  100% { transform: translate3d(32px,12px,0)   scale(1.15) rotate(10deg); }
+  0%   { transform: translate(0,0) scale(1) rotate(0deg);       border-radius: 50% 50% 50% 50%; }
+  33%  { transform: translate(22px,-18px) scale(1.12) rotate(6deg);  border-radius: 42% 58% 55% 45%; }
+  66%  { transform: translate(-16px,22px) scale(0.93) rotate(-4deg); border-radius: 58% 42% 40% 60%; }
+  100% { transform: translate(32px,12px) scale(1.15) rotate(10deg);  border-radius: 45% 55% 62% 38%; }
 }
 
 /* ─── SLIDE CONTENT ─── */

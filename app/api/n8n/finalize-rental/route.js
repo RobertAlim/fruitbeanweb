@@ -48,6 +48,7 @@ export async function POST(req) {
         success: true,
         accountCreated: false,
         existingAccount: true,
+        duplicate: Boolean(result.duplicate),
         clientId: result.clientId,
         email: result.email,
         companyName: result.companyName,

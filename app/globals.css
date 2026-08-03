@@ -298,13 +298,7 @@ nav {
   opacity: 0.32;
   filter: blur(55px);
   animation: blobMorph 9s ease-in-out infinite alternate;
-  animation-play-state: paused;
 }
-/* Only the currently-visible slide's blobs actually animate — the other
-   4 slides' worth of blobs sit paused offscreen instead of all 10
-   running at once. Same visual result, a fifth of the animation work. */
-.slide-active .blob { animation-play-state: running; }
-
 @keyframes blobMorph {
   0%   { transform: translate(0,0) scale(1) rotate(0deg);       border-radius: 50% 50% 50% 50%; }
   33%  { transform: translate(22px,-18px) scale(1.12) rotate(6deg);  border-radius: 42% 58% 55% 45%; }
@@ -1117,32 +1111,4 @@ section { padding: 70px 60px; }
   .slide5-wrap { flex-direction: column; padding: 0 24px; gap: 20px; }
   .slide5-photo { width: 180px; height: 180px; }
   .footer-wrap { padding: 2rem 1.5rem; }
-
-  /* Mobile: keep the blobs (they're transform-only now, cheap to run),
-     just shrink the blur radius since blur cost scales with size. */
-  .blob { filter: blur(28px); }
-
-  /* backdrop-filter on these is fine on mobile too — they're small
-     badges, not full-screen layers, so the blur cost is trivial. */
-
-  /* Faster, cheaper tap feedback instead of hover-style transforms */
-  a, button { -webkit-tap-highlight-color: transparent; }
-  .btn-primary:active, .btn-outline:active, .nav-cta:active { transform: scale(0.97); }
-}
-
-/* ─── Respect reduced-motion preference everywhere ─── */
-@media (prefers-reduced-motion: reduce) {
-  html { scroll-behavior: auto; }
-  *, *::before, *::after {
-    animation-duration: 0.001ms !important;
-    animation-iteration-count: 1 !important;
-    transition-duration: 0.001ms !important;
-  }
-}
-
-/* Improve tap responsiveness / avoid 300ms delay on all touch devices */
-@media (hover: none) and (pointer: coarse) {
-  a, button, .btn-primary, .btn-outline, .nav-cta, .arrow-btn, .dot {
-    touch-action: manipulation;
-  }
 }

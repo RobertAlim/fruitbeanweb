@@ -14,10 +14,10 @@
 // Expected n8n response shape: { reply: string, escalate?: boolean }
 // "escalate: true" is optional — if your n8n workflow can detect that a
 // human is needed (e.g. the visitor explicitly asks for a person, or the
-// AI is stuck), have it include that field and this file will automatically
-// flip the conversation into "awaiting_human" mode. If your workflow doesn't
-// send it, visitors can still always reach a human via the "Talk to a
-// person" button in the widget, which calls /api/chat/escalate directly.
+// AI is stuck), have it include that field. The caller (see
+// api/chat/messages/route.js) doesn't hand off immediately on this flag —
+// it asks the visitor to confirm first, and only escalates to
+// "awaiting_human" once they say yes.
 //
 // Request body sent to n8n: { messages, account }
 // "account" is null for anonymous visitors. If the visitor is signed in as

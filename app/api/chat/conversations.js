@@ -3,8 +3,9 @@
 // Shared data-access layer for the live chat / human-handoff system.
 // Used by:
 //   - app/api/chat/session/route.js     (widget opens / resumes a chat)
-//   - app/api/chat/messages/route.js    (visitor sends a message, AI replies)
-//   - app/api/chat/escalate/route.js    (visitor asks for a human)
+//   - app/api/chat/messages/route.js    (visitor sends a message, AI replies,
+//                                        and — after visitor confirmation —
+//                                        hands off to a human)
 //   - app/api/admin/conversations/*     (admin dashboard reads/writes)
 //
 // Requires the two tables created by chat_schema.sql:

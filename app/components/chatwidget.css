@@ -339,8 +339,8 @@
   margin-bottom: 2px;
 }
 
-/* ─── "Talk to a person" button ─── */
-.chatwidget-human-btn {
+/* ─── "Start a New Conversation" button (shown once a chat is closed) ─── */
+.chatwidget-newconvo-btn {
   flex-shrink: 0;
   margin: 0 12px 10px;
   padding: 7px 10px;
@@ -353,8 +353,21 @@
   cursor: pointer;
   transition: border-color .2s, background .2s;
 }
-.chatwidget-human-btn:hover:not(:disabled) { border-color: var(--cw-accent); background: #fdf2f8; }
-.chatwidget-human-btn:disabled { opacity: .6; cursor: not-allowed; }
+.chatwidget-newconvo-btn:hover { border-color: var(--cw-accent); background: #f3fbf4; }
+
+/* ─── Inline retry action inside a system notice (e.g. failed send) ─── */
+.chatwidget-retry-btn {
+  margin-left: 6px;
+  padding: 1px 8px;
+  border-radius: 999px;
+  border: 1px solid #d0d3d8;
+  background: #fff;
+  color: #1a1a2e;
+  font-size: 10.5px;
+  font-weight: 700;
+  cursor: pointer;
+}
+.chatwidget-retry-btn:hover { border-color: var(--cw-accent); color: var(--cw-accent); }
 
 /* ─── Responsive ─── */
 @media (max-width: 480px) {

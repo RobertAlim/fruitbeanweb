@@ -4,9 +4,17 @@ import { useState, useRef, useEffect, useCallback } from "react";
 import "./chatwidget.css";
 
 const SESSION_KEY = "fruitbean_chat_session_id";
+const OPENED_BEFORE_KEY = "fruitbean_chat_opened_before";
 const POLL_MS = 4000;
+const BACKGROUND_POLL_MS = 15000; // lighter polling while the widget is minimized
 const POLL_FAILS_BEFORE_WARNING = 2;
 const TYPING_ID = "__typing__";
+
+const WELCOME_MESSAGE = {
+	id: "__welcome__",
+	role: "bot",
+	text: "Hi! I'm Fruitbean's assistant. Looking to rent a printer, or have a question about our ink refill service?",
+};
 
 const isLiveStatus = (status) => status === "awaiting_human" || status === "human";
 
@@ -62,19 +70,14 @@ function getInitials(name) {
 export default function ChatWidget() {
 	const [open, setOpen] = useState(false);
 	const [ready, setReady] = useState(false);
-	const [messages, setMessages] = useState([
-		{
-			id: "__welcome__",
-			role: "bot",
-			text: "Hi! I'm Fruitbean's assistant. Looking to rent a printer, or have a question about our ink refill service?",
-		},
-	]);
+	const [messages, setMessages] = useState([WELCOME_MESSAGE]);
 	const [status, setStatus] = useState("ai"); // ai | awaiting_human | human | closed
 	const [claimedByName, setClaimedByName] = useState(null);
 	const [input, setInput] = useState("");
 	const [sending, setSending] = useState(false);
-	const [escalating, setEscalating] = useState(false);
 	const [connectionIssue, setConnectionIssue] = useState(false);
+	const [unreadCount, setUnreadCount] = useState(0);
+	const [hasOpenedBefore, setHasOpenedBefore] = useState(true); // assume true until checked, to avoid a flash of the nudge badge
 
 	const sessionIdRef = useRef(null);
 	const lastMessageIdRef = useRef(0);
@@ -82,8 +85,12 @@ export default function ChatWidget() {
 	// in-flight send (or vice versa) can't add the same message twice.
 	const seenIdsRef = useRef(new Set());
 	const pollRef = useRef(null);
+	const backgroundPollRef = useRef(null);
 	const pollFailCountRef = useRef(0);
 	const sendingRef = useRef(false);
+	// Mirrors `open` for use inside callbacks (poll/merge) that shouldn't
+	// re-subscribe every time the panel opens or closes.
+	const openRef = useRef(false);
 
 	const scrollRef = useRef(null);
 	const textareaRef = useRef(null);
@@ -92,6 +99,11 @@ export default function ChatWidget() {
 
 	useEffect(() => {
 		sessionIdRef.current = getOrCreateSessionId();
+		try {
+			setHasOpenedBefore(localStorage.getItem(OPENED_BEFORE_KEY) === "1");
+		} catch {
+			setHasOpenedBefore(true);
+		}
 	}, []);
 
 	useEffect(() => {
@@ -118,7 +130,7 @@ export default function ChatWidget() {
 	// visitor's own row because it's already on screen as an optimistic
 	// bubble — this should ONLY be passed by handleSend, right after it
 	// added that bubble. Every other caller (initSession loading history,
-	// polling, escalate) must show visitor rows normally, or the visitor's
+	// polling) must show visitor rows normally, or the visitor's
 	// own past messages disappear the moment the widget reloads its history.
 	function mergeServerMessages(serverMessages, { hideVisitor = false } = {}) {
 		if (!serverMessages?.length) return;
@@ -138,6 +150,14 @@ export default function ChatWidget() {
 			...fresh.map((m) => m.message_id)
 		);
 
+		// If any of these arrived while the panel was minimized, they're
+		// genuinely unread — count them so the toggle badge reflects reality
+		// instead of a static placeholder.
+		if (!openRef.current) {
+			const fromOthers = fresh.filter((m) => m.sender_type !== "visitor").length;
+			if (fromOthers) setUnreadCount((c) => c + fromOthers);
+		}
+
 		const toShow = hideVisitor ? fresh.filter((m) => m.sender_type !== "visitor") : fresh;
 		if (toShow.length) {
 			setMessages((prev) => [...prev, ...toShow.map(toDisplayMessage)]);
@@ -153,8 +173,11 @@ export default function ChatWidget() {
 	}
 
 	// Load (or resume) the conversation the first time the widget is opened.
-	async function initSession() {
-		if (ready || !sessionIdRef.current) return;
+	// `force` skips the "already ready" guard — used when starting a brand
+	// new conversation after the previous one was closed, since `ready`
+	// hasn't re-rendered as false yet at the moment this is called.
+	async function initSession(force = false) {
+		if ((ready && !force) || !sessionIdRef.current) return;
 		try {
 			const identity = getKnownIdentity();
 			const res = await fetch("/api/chat/session", {
@@ -166,7 +189,21 @@ export default function ChatWidget() {
 			if (res.ok) {
 				setStatus(data.conversation.status);
 				setClaimedByName(data.conversation.claimed_by_name || null);
-				mergeServerMessages(data.messages);
+				if (data.messages.length > 0) {
+					// Returning visitor with real history — show that, and
+					// only that, so the generic greeting doesn't repeat
+					// above a conversation that's already well underway.
+					data.messages.forEach((m) => seenIdsRef.current.add(m.message_id));
+					lastMessageIdRef.current = Math.max(
+						lastMessageIdRef.current,
+						...data.messages.map((m) => m.message_id)
+					);
+					setMessages(data.messages.map(toDisplayMessage));
+				} else {
+					setMessages([WELCOME_MESSAGE]);
+				}
+				pollFailCountRef.current = 0;
+				setConnectionIssue(false);
 			}
 		} catch (err) {
 			console.error("Failed to start chat session:", err);
@@ -205,7 +242,13 @@ export default function ChatWidget() {
 	// Poll for admin replies while the widget is open, especially useful once
 	// a human has taken over (their replies don't arrive via handleSend).
 	useEffect(() => {
+		openRef.current = open;
 		if (open) {
+			setUnreadCount(0);
+			try {
+				localStorage.setItem(OPENED_BEFORE_KEY, "1");
+			} catch {}
+			setHasOpenedBefore(true);
 			initSession();
 			pollRef.current = setInterval(poll, POLL_MS);
 		} else if (pollRef.current) {
@@ -218,14 +261,26 @@ export default function ChatWidget() {
 		// eslint-disable-next-line react-hooks/exhaustive-deps
 	}, [open]);
 
-	async function handleSend(e) {
-		e.preventDefault();
+	// While the widget is minimized, check in occasionally (much less often
+	// than the open-panel poll) so a reply that arrives while the visitor is
+	// away still shows up as a real unread count instead of nothing at all.
+	useEffect(() => {
+		if (!ready || open) return;
+		backgroundPollRef.current = setInterval(poll, BACKGROUND_POLL_MS);
+		return () => {
+			if (backgroundPollRef.current) clearInterval(backgroundPollRef.current);
+		};
+		// eslint-disable-next-line react-hooks/exhaustive-deps
+	}, [ready, open]);
 
-		const text = input.trim();
+	async function handleSend(e, overrideText) {
+		e?.preventDefault?.();
+
+		const text = (overrideText ?? input).trim();
 		if (!text || sending) return;
 
 		setMessages((prev) => [...prev, { id: `__local_${Date.now()}__`, role: "user", text }]);
-		setInput("");
+		if (overrideText === undefined) setInput("");
 		setSending(true);
 		sendingRef.current = true;
 
@@ -267,14 +322,18 @@ export default function ChatWidget() {
 			pollFailCountRef.current = 0;
 			setConnectionIssue(false);
 		} catch (err) {
+			// Shown as a distinct system notice (not a fake "bot reply") so
+			// it's clearly a delivery problem, with a one-tap way to retry
+			// the exact message instead of having to retype it.
 			setMessages((prev) => {
 				const next = prev.filter((m) => m.id !== TYPING_ID);
 				return [
 					...next,
 					{
 						id: `__local_err_${Date.now()}__`,
-						role: "bot",
-						text: `⚠️ ${err.message || "Sorry, I couldn't connect right now."}`,
+						role: "system",
+						text: err.message || "Couldn't send that message. Please check your connection.",
+						retryText: text,
 					},
 				];
 			});
@@ -284,26 +343,29 @@ export default function ChatWidget() {
 		}
 	}
 
-	async function handleTalkToHuman() {
-		if (escalating || status !== "ai") return;
-		setEscalating(true);
-		try {
-			const identity = getKnownIdentity();
-			const res = await fetch("/api/chat/escalate", {
-				method: "POST",
-				headers: { "Content-Type": "application/json" },
-				body: JSON.stringify({ sessionId: sessionIdRef.current, ...identity }),
-			});
-			const data = await res.json();
-			if (res.ok) applyServerState(data.conversation, data.messages);
-		} catch (err) {
-			console.error("Failed to escalate:", err);
-		} finally {
-			setEscalating(false);
-		}
+	function retrySend(text, errorRowId) {
+		setMessages((prev) => prev.filter((m) => m.id !== errorRowId));
+		handleSend(undefined, text);
 	}
 
-	const showTalkToHuman = status === "ai";
+	// A closed conversation is a dead end otherwise — the same session id
+	// would keep resolving to the same closed thread forever. Retiring it
+	// and minting a fresh one lets the visitor start clean with one tap.
+	function startNewConversation() {
+		try {
+			localStorage.removeItem(SESSION_KEY);
+		} catch {}
+		sessionIdRef.current = getOrCreateSessionId();
+		seenIdsRef.current = new Set();
+		lastMessageIdRef.current = 0;
+		pollFailCountRef.current = 0;
+		setConnectionIssue(false);
+		setStatus("ai");
+		setClaimedByName(null);
+		setMessages([WELCOME_MESSAGE]);
+		setReady(false);
+		initSession(true);
+	}
 
 	const headerTitle = live
 		? claimedByName
@@ -385,6 +447,15 @@ export default function ChatWidget() {
 								return (
 									<div key={m.id} className="chatwidget-system-row">
 										{m.text}
+										{m.retryText && (
+											<button
+												type="button"
+												className="chatwidget-retry-btn"
+												onClick={() => retrySend(m.retryText, m.id)}
+											>
+												Retry
+											</button>
+										)}
 									</div>
 								);
 							}
@@ -430,14 +501,13 @@ export default function ChatWidget() {
 						})}
 					</div>
 
-					{showTalkToHuman && (
+					{status === "closed" && (
 						<button
 							type="button"
-							className="chatwidget-human-btn"
-							onClick={handleTalkToHuman}
-							disabled={escalating}
+							className="chatwidget-newconvo-btn"
+							onClick={startNewConversation}
 						>
-							{escalating ? "Connecting…" : "🙋 Talk to a person"}
+							🔄 Start a New Conversation
 						</button>
 					)}
 
@@ -458,7 +528,7 @@ export default function ChatWidget() {
 							}}
 							placeholder={
 								status === "closed"
-									? "This conversation has ended…"
+									? "This conversation has ended — start a new one above"
 									: live
 									? "Message our team…"
 									: "Ask about renting a printer…"
@@ -496,7 +566,12 @@ export default function ChatWidget() {
 				)}
 
 				{!open && live && <span className="chatwidget-toggle-livedot" aria-hidden="true" />}
-				{!open && !live && <span className="chatwidget-toggle-badge">1</span>}
+				{!open && !live && unreadCount > 0 && (
+					<span className="chatwidget-toggle-badge">{unreadCount > 9 ? "9+" : unreadCount}</span>
+				)}
+				{!open && !live && unreadCount === 0 && !hasOpenedBefore && (
+					<span className="chatwidget-toggle-badge">1</span>
+				)}
 			</button>
 		</div>
 	);

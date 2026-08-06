@@ -2,6 +2,7 @@
 import { useState } from 'react';
 import Image from 'next/image';
 import '../login/login.css';
+import { notify } from '../components/toast';
 
 function isValidEmail(val) {
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(val.trim());
@@ -34,11 +35,14 @@ export default function ForgotPasswordPage() {
       if (res.ok) {
         setSent(true);
         setFeedback({ msg: data.message || "If an account exists for that email, we've sent a password reset link.", type: 'success' });
+        notify(data.message || "If an account exists for that email, we've sent a reset link.", 'success');
       } else {
         setFeedback({ msg: data.error || 'Something went wrong. Please try again.', type: 'error' });
+        notify(data.error || 'Something went wrong. Please try again.', 'error');
       }
     } catch {
       setFeedback({ msg: 'Network error. Please try again.', type: 'error' });
+      notify('Network error. Please try again.', 'error');
     } finally {
       setLoading(false);
     }

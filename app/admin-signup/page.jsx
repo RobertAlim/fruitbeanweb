@@ -2,6 +2,7 @@
 import { useState } from 'react';
 import Image from 'next/image';
 import '../login/login.css';
+import { notify } from '../components/toast';
 
 function isValidEmail(val) {
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(val.trim());
@@ -52,11 +53,14 @@ export default function AdminSignupPage() {
       if (res.ok) {
         setSubmitted(true);
         setFeedback({ msg: data.message, type: 'success' });
+        notify(data.message || 'Signup request submitted.', 'success');
       } else {
         setFeedback({ msg: data.error || 'Something went wrong. Please try again.', type: 'error' });
+        notify(data.error || 'Something went wrong. Please try again.', 'error');
       }
     } catch {
       setFeedback({ msg: 'Network error. Please try again.', type: 'error' });
+      notify('Network error. Please try again.', 'error');
     } finally {
       setLoading(false);
     }

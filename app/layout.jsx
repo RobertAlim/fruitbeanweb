@@ -1,5 +1,6 @@
 import './globals.css'
 import ChatWidget from './components/ChatWidget'
+import Toast from './components/Toast'
 export const metadata = {
   title: 'Fruitbean Ink Refilling Station',
 }
@@ -15,6 +16,7 @@ export default function RootLayout({ children }) {
       <body>
         {children}
         <ChatWidget />
+        <Toast />
       </body>
     </html>
   )

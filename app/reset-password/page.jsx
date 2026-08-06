@@ -3,6 +3,7 @@ import { useState, Suspense } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import Image from 'next/image';
 import '../login/login.css';
+import { notify } from '../components/toast';
 
 function ResetPasswordForm() {
   const router       = useRouter();
@@ -45,12 +46,15 @@ function ResetPasswordForm() {
       if (res.ok) {
         setDone(true);
         setFeedback({ msg: '✅ Password updated! Redirecting to login…', type: 'success' });
+        notify('Password updated. Redirecting to login…', 'success');
         setTimeout(() => router.push('/login'), 1500);
       } else {
         setFeedback({ msg: data.error || 'Something went wrong. Please try again.', type: 'error' });
+        notify(data.error || 'Something went wrong. Please try again.', 'error');
       }
     } catch {
       setFeedback({ msg: 'Network error. Please try again.', type: 'error' });
+      notify('Network error. Please try again.', 'error');
     } finally {
       setLoading(false);
     }

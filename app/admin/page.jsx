@@ -4,6 +4,7 @@ import { useRouter } from 'next/navigation';
 import './admin.css';
 import ChangePasswordModal from '../components/ChangePasswordModal';
 import ContractTimer from '../components/ContractTimer';
+import { notify } from '../components/toast';
 
 const STATUS_ORDER = { active: 0, pending: 1, problem: 2, resolved: 3, ended: 4 };
 const TECHNICIANS  = ['Arjay', 'Em Jay', 'OJT Gang', 'Leyah', 'Alim'];
@@ -109,8 +110,16 @@ export default function AdminPage() {
         headers: { 'Content-Type': 'application/json' },
         body:    JSON.stringify({ client_id, account_status: true }),
       });
-      if (res.ok) setPendingAdmins(prev => prev.filter(p => p.client_id !== client_id));
-    } catch (err) { console.error('Failed to approve admin:', err); }
+      if (res.ok) {
+        setPendingAdmins(prev => prev.filter(p => p.client_id !== client_id));
+        notify('Admin account approved.', 'success');
+      } else {
+        notify('Failed to approve admin. Please try again.', 'error');
+      }
+    } catch (err) {
+      console.error('Failed to approve admin:', err);
+      notify('Failed to approve admin. Please try again.', 'error');
+    }
     finally { setPendingActionId(null); }
   }
 
@@ -123,8 +132,16 @@ export default function AdminPage() {
         headers: { 'Content-Type': 'application/json' },
         body:    JSON.stringify({ client_id }),
       });
-      if (res.ok) setPendingAdmins(prev => prev.filter(p => p.client_id !== client_id));
-    } catch (err) { console.error('Failed to reject admin:', err); }
+      if (res.ok) {
+        setPendingAdmins(prev => prev.filter(p => p.client_id !== client_id));
+        notify('Admin account request rejected.', 'success');
+      } else {
+        notify('Failed to reject admin. Please try again.', 'error');
+      }
+    } catch (err) {
+      console.error('Failed to reject admin:', err);
+      notify('Failed to reject admin. Please try again.', 'error');
+    }
     finally { setPendingActionId(null); }
   }
 
@@ -237,6 +254,22 @@ export default function AdminPage() {
     if (detailTarget) setDetailTarget(prev => update(prev));
   }
 
+  function removeRentalLocally(rental_id) {
+    const strip = prev => ({
+      ...prev,
+      rentals: (prev.rentals ?? []).filter(r => r.rental_id !== rental_id),
+    });
+    setClients(prev => prev.map(c => strip(c)));
+    if (detailTarget) setDetailTarget(prev => strip(prev));
+  }
+
+  const STATUS_TOAST_LABELS = {
+    active:   'Rental activated.',
+    problem:  'Rental flagged as a problem.',
+    resolved: 'Rental marked resolved.',
+    ended:    'Rental ended.',
+  };
+
   async function handleStatusChange(rental_id, newStatus) {
     applyStatusChange(rental_id, newStatus);
     try {
@@ -246,8 +279,34 @@ export default function AdminPage() {
         body:    JSON.stringify({ rental_id, status: newStatus }),
       });
       if (!res.ok) throw new Error('Failed');
+      notify(STATUS_TOAST_LABELS[newStatus] || 'Rental updated.', 'success');
     } catch (err) {
       console.error('Failed to update rental:', err);
+      notify('Failed to update rental. Please try again.', 'error');
+      try {
+        const res  = await fetch('/api/admin/clients');
+        const data = await res.json();
+        if (res.ok) setClients(data.clients);
+      } catch {}
+    }
+  }
+
+  // Denying a still-pending rental request means it never actually
+  // happened — delete the row entirely instead of parking it under
+  // "Ended" where it'd just sit as clutter.
+  async function handleDenyRental(rental_id) {
+    removeRentalLocally(rental_id);
+    try {
+      const res = await fetch('/api/rentals', {
+        method:  'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body:    JSON.stringify({ rental_id }),
+      });
+      if (!res.ok) throw new Error('Failed');
+      notify('Rental request denied and removed.', 'success');
+    } catch (err) {
+      console.error('Failed to deny rental:', err);
+      notify('Failed to deny rental. Please try again.', 'error');
       try {
         const res  = await fetch('/api/admin/clients');
         const data = await res.json();
@@ -260,14 +319,17 @@ export default function AdminPage() {
   const CONFIRM_COPY = {
     problem: { title: '⚠️ Flag as Problem?',      body: m => `This marks ${m} as having a problem.`,                    confirmLabel: 'Yes, Flag It',    confirmBg: '#b45309' },
     ended:   { title: '📦 End This Rental?',       body: m => `This ends the rental for ${m}.`,                          confirmLabel: 'Yes, End Rental', confirmBg: '#475569' },
-    deny:    { title: '🚫 Deny Rental Request?',   body: m => `This will deny the pending rental request for ${m}. The client will be notified.`, confirmLabel: 'Yes, Deny Request', confirmBg: '#dc2626' },
+    deny:    { title: '🚫 Deny Rental Request?',   body: m => `This will deny and permanently delete the pending rental request for ${m}. The client will be notified.`, confirmLabel: 'Yes, Deny Request', confirmBg: '#dc2626' },
   };
   function openConfirm(rental, action) { setConfirmTarget({ rental, action }); }
   function closeConfirm() { setConfirmTarget(null); }
   function runConfirmedAction() {
     if (!confirmTarget) return;
-    const statusToSet = confirmTarget.action === 'deny' ? 'ended' : confirmTarget.action;
-    handleStatusChange(confirmTarget.rental.rental_id, statusToSet);
+    if (confirmTarget.action === 'deny') {
+      handleDenyRental(confirmTarget.rental.rental_id);
+    } else {
+      handleStatusChange(confirmTarget.rental.rental_id, confirmTarget.action);
+    }
     closeConfirm();
   }
 
@@ -297,7 +359,12 @@ export default function AdminPage() {
       if (!res.ok) throw new Error(data.error || 'Failed to resolve');
       applyRentalUpdate(data.rental);
       closeResolveModal();
-    } catch (err) { console.error(err); setResolveError('Something went wrong. Please try again.'); }
+      notify('Problem marked as resolved. Client has been notified.', 'success');
+    } catch (err) {
+      console.error(err);
+      setResolveError('Something went wrong. Please try again.');
+      notify('Failed to mark as resolved. Please try again.', 'error');
+    }
     finally { setResolveSubmitting(false); }
   }
 
@@ -331,7 +398,12 @@ export default function AdminPage() {
       if (!res.ok) throw new Error(data.error || 'Failed to assign');
       applyRentalUpdate(data.rental);
       closeAssignModal();
-    } catch (err) { console.error(err); setAssignError('Something went wrong. Please try again.'); }
+      notify('Technician assigned.', 'success');
+    } catch (err) {
+      console.error(err);
+      setAssignError('Something went wrong. Please try again.');
+      notify('Failed to assign technician. Please try again.', 'error');
+    }
     finally { setAssignSubmitting(false); }
   }
 
@@ -383,7 +455,12 @@ export default function AdminPage() {
       if (!res.ok) throw new Error(data.error || 'Failed to extend contract');
       applyRentalUpdate(data.rental);
       closeExtendModal();
-    } catch (err) { console.error(err); setExtendError('Something went wrong. Please try again.'); }
+      notify('Contract extended.', 'success');
+    } catch (err) {
+      console.error(err);
+      setExtendError('Something went wrong. Please try again.');
+      notify('Failed to extend contract. Please try again.', 'error');
+    }
     finally { setExtendSubmitting(false); }
   }
 
@@ -418,9 +495,11 @@ export default function AdminPage() {
       setClients(prev => prev.filter(c => c.client_id !== deleteTarget.client_id));
       if (detailTarget?.client_id === deleteTarget.client_id) closeDetail();
       closeDeleteModal();
+      notify('Client account deleted.', 'success');
     } catch (err) {
       console.error(err);
       setDeleteError(err.message || 'Something went wrong. Please try again.');
+      notify(err.message || 'Failed to delete client. Please try again.', 'error');
     } finally {
       setDeleteSubmitting(false);
     }
@@ -456,7 +535,11 @@ export default function AdminPage() {
       setClients(prev => prev.map(c => c.client_id === editTarget.client_id ? { ...c, ...updated } : c));
       if (detailTarget?.client_id === editTarget.client_id) setDetailTarget(prev => ({ ...prev, ...updated }));
       setEditTarget(null);
-    } catch (err) { setEditError(err.message || 'Something went wrong.'); }
+      notify('Company details updated.', 'success');
+    } catch (err) {
+      setEditError(err.message || 'Something went wrong.');
+      notify(err.message || 'Failed to update company details.', 'error');
+    }
     finally { setEditSubmitting(false); }
   }
 

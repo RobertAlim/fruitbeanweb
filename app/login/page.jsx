@@ -3,6 +3,7 @@ import { useState } from 'react';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import './login.css';
+import { notify } from '../components/toast';
 
 function isValidEmail(val) {
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(val.trim());
@@ -59,13 +60,16 @@ export default function LoginPage() {
         }
 
         setFeedback({ msg: '✅ Login successful! Redirecting…', type: 'success' });
+        notify('Login successful. Redirecting…', 'success');
         const destination = data.account_type === 'admin' ? '/admin' : '/client';
         setTimeout(() => router.push(destination), 800);
       } else {
         setFeedback({ msg: data.error || 'Incorrect email or password.', type: 'error' });
+        notify(data.error || 'Incorrect email or password.', 'error');
       }
     } catch {
       setFeedback({ msg: 'Network error. Please try again.', type: 'error' });
+      notify('Network error. Please try again.', 'error');
     } finally {
       setLoading(false);
     }

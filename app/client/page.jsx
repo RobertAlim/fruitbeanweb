@@ -5,6 +5,7 @@ import './client.css';
 import TroubleshootChat from '../components/TroubleshootChat';
 import ChangePasswordModal from '../components/ChangePasswordModal';
 import ContractTimer from '../components/ContractTimer';
+import { notify } from '../components/toast';
 
 const PROBLEM_OPTIONS = [
   { id: 'bad_printout',    title: 'Bad Print-out',   desc: 'Blurry, faded, or streaky print quality', icon: '🖨️' },
@@ -160,9 +161,11 @@ export default function ClientPage() {
       if (!res.ok) throw new Error(data.error || 'Failed to submit report');
       setRentals(prev => prev.map(r => r.rental_id === reportTarget.rental_id ? { ...r, ...data.rental } : r));
       setSubmitted(true);
+      notify('Problem reported. Our team has been notified.', 'success');
     } catch (err) {
       console.error(err);
       setReportError('Something went wrong. Please try again.');
+      notify('Failed to submit report. Please try again.', 'error');
     } finally { setReportSubmitting(false); }
   }
 
@@ -178,23 +181,34 @@ export default function ClientPage() {
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Failed to confirm');
       setRentals(prev => prev.map(r => r.rental_id === rental_id ? { ...r, ...data.rental } : r));
-    } catch (err) { console.error('Failed to confirm fix:', err); }
+      notify('Fix confirmed. Rental is active again.', 'success');
+    } catch (err) {
+      console.error('Failed to confirm fix:', err);
+      notify('Failed to confirm the fix. Please try again.', 'error');
+    }
     finally { setConfirmingFix(null); }
   }
 
+  // Cancelling a still-pending request means it never actually happened —
+  // delete the row entirely instead of parking it under "Ended" where it'd
+  // just sit as clutter.
   async function handleCancelRental(rental_id) {
     if (!confirm('Cancel this pending rental request? This cannot be undone.')) return;
     setCancellingRental(rental_id);
     try {
       const res = await fetch('/api/rentals', {
-        method: 'PATCH',
+        method: 'DELETE',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ rental_id, status: 'ended' }),
+        body: JSON.stringify({ rental_id }),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Failed to cancel');
-      setRentals(prev => prev.map(r => r.rental_id === rental_id ? { ...r, ...data.rental } : r));
-    } catch (err) { console.error('Failed to cancel rental:', err); }
+      setRentals(prev => prev.filter(r => r.rental_id !== rental_id));
+      notify('Rental request cancelled and removed.', 'success');
+    } catch (err) {
+      console.error('Failed to cancel rental:', err);
+      notify('Failed to cancel rental. Please try again.', 'error');
+    }
     finally { setCancellingRental(null); }
   }
 
@@ -267,9 +281,11 @@ export default function ClientPage() {
       if (!res.ok) throw new Error(data.error || 'Failed');
       setRentSuccess(true);
       fetchRentals(clientId);
+      notify('Rental request submitted. Awaiting admin approval.', 'success');
     } catch (err) {
       console.error(err);
       setRentError('Something went wrong. Please try again.');
+      notify('Failed to submit rental request. Please try again.', 'error');
     } finally { setRentSubmitting(false); }
   }
 

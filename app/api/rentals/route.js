@@ -411,3 +411,36 @@ export async function PATCH(req) {
     return Response.json({ error: 'Failed to update rental status.' }, { status: 500 });
   }
 }
+
+// DELETE /api/rentals
+// Body: { rental_id }
+// Fully removes a rental row from the database. Used when an admin denies,
+// or a client cancels, a still-Pending rental request — those never
+// actually happened, so there's no reason to keep a row around under an
+// "Ended" status just to clutter the list. Restricted to Pending rentals
+// only: anything further along (active/problem/resolved/ended) has real
+// history tied to it and should go through a status change instead.
+export async function DELETE(req) {
+  const body = await req.json();
+  const { rental_id } = body;
+
+  if (!rental_id) {
+    return Response.json({ error: 'rental_id is required.' }, { status: 400 });
+  }
+
+  try {
+    const { rows } = await pool.query(
+      `DELETE FROM rentals WHERE rental_id = $1 AND status = 'Pending' RETURNING rental_id`,
+      [rental_id]
+    );
+
+    if (rows.length === 0) {
+      return Response.json({ error: 'Rental not found or is not pending.' }, { status: 404 });
+    }
+
+    return Response.json({ ok: true, rental_id }, { status: 200 });
+  } catch (err) {
+    console.error('DB error:', err);
+    return Response.json({ error: 'Failed to delete rental.' }, { status: 500 });
+  }
+}

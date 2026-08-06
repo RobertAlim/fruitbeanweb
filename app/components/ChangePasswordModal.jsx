@@ -1,5 +1,6 @@
 'use client';
 import { useState } from 'react';
+import { notify } from './toast';
 
 export default function ChangePasswordModal({ clientId, onClose }) {
   const [currentPassword, setCurrentPassword] = useState('');
@@ -40,8 +41,10 @@ export default function ChangePasswordModal({ clientId, onClose }) {
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Failed to change password.');
       setSuccess(true);
+      notify('Password changed successfully.', 'success');
     } catch (err) {
       setError(err.message || 'Something went wrong. Please try again.');
+      notify(err.message || 'Failed to change password.', 'error');
     } finally {
       setSubmitting(false);
     }

@@ -193,7 +193,7 @@ export default function Hero() {
               </div>
             </div>
             <div className="slide5-photo">
-              <img src="images/our-ink.jpg" alt="Fruitbean Premium Ink" />
+              <img src="images/INK.png" alt="Fruitbean Premium Ink" />
               <div className="slide5-photo-badge"><span>✦</span> Premium Quality Ink</div>
             </div>
           </div>

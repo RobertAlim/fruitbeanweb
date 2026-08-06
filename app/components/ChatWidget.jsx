@@ -9,6 +9,8 @@ const POLL_MS = 4000;
 const BACKGROUND_POLL_MS = 15000; // lighter polling while the widget is minimized
 const POLL_FAILS_BEFORE_WARNING = 2;
 const TYPING_ID = "__typing__";
+const CLOSE_ANIM_MS = 190; // keep in sync with .chatwidget-panel--closing duration in chatwidget.css
+const NEAR_BOTTOM_PX = 64;
 
 const WELCOME_MESSAGE = {
 	id: "__welcome__",
@@ -67,17 +69,76 @@ function getInitials(name) {
 		.slice(0, 2);
 }
 
+/* ─── Small inline icon set (no external deps, inherits currentColor) ─── */
+function IconClose(props) {
+	return (
+		<svg viewBox="0 0 24 24" width="15" height="15" fill="none" aria-hidden="true" {...props}>
+			<path d="M6 6l12 12M18 6L6 18" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" />
+		</svg>
+	);
+}
+function IconSend(props) {
+	return (
+		<svg viewBox="0 0 24 24" width="16" height="16" fill="none" aria-hidden="true" {...props}>
+			<path
+				d="M4 12L20 4L13 20L11 13L4 12Z"
+				stroke="currentColor"
+				strokeWidth="2"
+				strokeLinejoin="round"
+				strokeLinecap="round"
+			/>
+		</svg>
+	);
+}
+function IconChevronDown(props) {
+	return (
+		<svg viewBox="0 0 24 24" width="16" height="16" fill="none" aria-hidden="true" {...props}>
+			<path d="M6 9l6 6 6-6" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" />
+		</svg>
+	);
+}
+function IconRefresh(props) {
+	return (
+		<svg viewBox="0 0 24 24" width="13" height="13" fill="none" aria-hidden="true" {...props}>
+			<path
+				d="M4 4v5h5M20 20v-5h-5M4.5 15a8 8 0 0 0 14.1 3M19.5 9A8 8 0 0 0 5.4 6"
+				stroke="currentColor"
+				strokeWidth="2"
+				strokeLinecap="round"
+				strokeLinejoin="round"
+			/>
+		</svg>
+	);
+}
+function IconWifiOff(props) {
+	return (
+		<svg viewBox="0 0 24 24" width="12" height="12" fill="none" aria-hidden="true" {...props}>
+			<path
+				d="M2 8.5C6 5 10 3.5 12 3.5s6 1.5 10 5M5 12c2.3-1.9 4.6-2.9 7-2.9s4.7 1 7 2.9M8.3 15.4a6 6 0 0 1 7.4 0M12 19h.01M2 2l20 20"
+				stroke="currentColor"
+				strokeWidth="1.8"
+				strokeLinecap="round"
+				strokeLinejoin="round"
+			/>
+		</svg>
+	);
+}
+
 export default function ChatWidget() {
 	const [open, setOpen] = useState(false);
+	const [closing, setClosing] = useState(false);
 	const [ready, setReady] = useState(false);
 	const [messages, setMessages] = useState([WELCOME_MESSAGE]);
 	const [status, setStatus] = useState("ai"); // ai | awaiting_human | human | closed
 	const [claimedByName, setClaimedByName] = useState(null);
 	const [input, setInput] = useState("");
 	const [sending, setSending] = useState(false);
+	const [sendPulse, setSendPulse] = useState(false);
 	const [connectionIssue, setConnectionIssue] = useState(false);
 	const [unreadCount, setUnreadCount] = useState(0);
 	const [hasOpenedBefore, setHasOpenedBefore] = useState(true); // assume true until checked, to avoid a flash of the nudge badge
+	const [isNearBottom, setIsNearBottom] = useState(true);
+	const [newMessageWaiting, setNewMessageWaiting] = useState(false);
 
 	const sessionIdRef = useRef(null);
 	const lastMessageIdRef = useRef(0);
@@ -91,11 +152,15 @@ export default function ChatWidget() {
 	// Mirrors `open` for use inside callbacks (poll/merge) that shouldn't
 	// re-subscribe every time the panel opens or closes.
 	const openRef = useRef(false);
+	const closeTimeoutRef = useRef(null);
+	const sendPulseTimeoutRef = useRef(null);
+	const focusTimeoutRef = useRef(null);
 
 	const scrollRef = useRef(null);
 	const textareaRef = useRef(null);
 
 	const live = isLiveStatus(status);
+	const panelVisible = open || closing;
 
 	useEffect(() => {
 		sessionIdRef.current = getOrCreateSessionId();
@@ -104,14 +169,39 @@ export default function ChatWidget() {
 		} catch {
 			setHasOpenedBefore(true);
 		}
+		return () => {
+			if (closeTimeoutRef.current) clearTimeout(closeTimeoutRef.current);
+			if (sendPulseTimeoutRef.current) clearTimeout(sendPulseTimeoutRef.current);
+			if (focusTimeoutRef.current) clearTimeout(focusTimeoutRef.current);
+		};
 	}, []);
 
+	// Smart auto-scroll: only snap to the newest message when the visitor is
+	// already near the bottom (i.e. actively reading live). If they've
+	// scrolled up to reread something, don't yank them away — just flag that
+	// something new arrived so the "jump to latest" pill can appear.
 	useEffect(() => {
-		scrollRef.current?.scrollTo({
-			top: scrollRef.current.scrollHeight,
-			behavior: "smooth",
-		});
-	}, [messages, open]);
+		const el = scrollRef.current;
+		if (!el) return;
+		if (isNearBottom) {
+			el.scrollTo({ top: el.scrollHeight, behavior: "smooth" });
+			setNewMessageWaiting(false);
+		} else {
+			setNewMessageWaiting(true);
+		}
+		// eslint-disable-next-line react-hooks/exhaustive-deps
+	}, [messages]);
+
+	// Reset scroll position + focus the composer whenever the panel opens.
+	useEffect(() => {
+		if (!open) return;
+		const el = scrollRef.current;
+		if (el) el.scrollTop = el.scrollHeight;
+		setIsNearBottom(true);
+		setNewMessageWaiting(false);
+		focusTimeoutRef.current = setTimeout(() => textareaRef.current?.focus(), 260);
+		return () => clearTimeout(focusTimeoutRef.current);
+	}, [open]);
 
 	useEffect(() => {
 		const el = textareaRef.current;
@@ -123,6 +213,22 @@ export default function ChatWidget() {
 	useEffect(() => {
 		sendingRef.current = sending;
 	}, [sending]);
+
+	function handleMessagesScroll() {
+		const el = scrollRef.current;
+		if (!el) return;
+		const distanceFromBottom = el.scrollHeight - el.scrollTop - el.clientHeight;
+		const near = distanceFromBottom < NEAR_BOTTOM_PX;
+		setIsNearBottom(near);
+		if (near) setNewMessageWaiting(false);
+	}
+
+	function scrollToBottom() {
+		const el = scrollRef.current;
+		if (el) el.scrollTo({ top: el.scrollHeight, behavior: "smooth" });
+		setIsNearBottom(true);
+		setNewMessageWaiting(false);
+	}
 
 	// Merges a batch of server rows into local state exactly once each,
 	// regardless of whether they arrived via polling, a send response, or
@@ -273,6 +379,26 @@ export default function ChatWidget() {
 		// eslint-disable-next-line react-hooks/exhaustive-deps
 	}, [ready, open]);
 
+	// Opens with a quick pop; closes with a matching shrink-and-fade instead
+	// of vanishing instantly, so the widget feels like a physical object
+	// rather than a toggled div.
+	function openPanel() {
+		if (closeTimeoutRef.current) {
+			clearTimeout(closeTimeoutRef.current);
+			closeTimeoutRef.current = null;
+		}
+		setClosing(false);
+		setOpen(true);
+	}
+	function closePanel() {
+		setClosing(true);
+		closeTimeoutRef.current = setTimeout(() => {
+			setOpen(false);
+			setClosing(false);
+			closeTimeoutRef.current = null;
+		}, CLOSE_ANIM_MS);
+	}
+
 	async function handleSend(e, overrideText) {
 		e?.preventDefault?.();
 
@@ -283,6 +409,9 @@ export default function ChatWidget() {
 		if (overrideText === undefined) setInput("");
 		setSending(true);
 		sendingRef.current = true;
+		setSendPulse(true);
+		if (sendPulseTimeoutRef.current) clearTimeout(sendPulseTimeoutRef.current);
+		sendPulseTimeoutRef.current = setTimeout(() => setSendPulse(false), 450);
 
 		const waitingOnAi = status === "ai";
 		if (waitingOnAi) {
@@ -385,16 +514,20 @@ export default function ChatWidget() {
 
 	const bannerText =
 		status === "awaiting_human"
-			? "🙋 You're connected with our team — someone will reply shortly."
+			? "You're connected with our team — someone will reply shortly."
 			: status === "human"
-			? `💬 You're chatting with ${claimedByName || "our team"}.`
+			? `You're chatting with ${claimedByName || "our team"}.`
 			: null;
+
+	const showNudge = !open && !live && (unreadCount > 0 || !hasOpenedBefore);
 
 	return (
 		<div className="chatwidget-root">
-			{open && (
+			{panelVisible && (
 				<div
-					className={`chatwidget-panel${live ? " chatwidget-panel--live" : ""}`}
+					className={`chatwidget-panel${live ? " chatwidget-panel--live" : ""}${
+						closing ? " chatwidget-panel--closing" : ""
+					}`}
 					role="dialog"
 					aria-label={live ? "Fruitbean live support" : "Fruitbean chat assistant"}
 				>
@@ -420,7 +553,11 @@ export default function ChatWidget() {
 									{live && <span className="chatwidget-live-chip">LIVE</span>}
 								</div>
 								<div className="chatwidget-subtitle">
-									{connectionIssue && <span className="chatwidget-reconnect-dot" />}
+									{connectionIssue ? (
+										<IconWifiOff className="chatwidget-reconnect-icon" />
+									) : (
+										<span className="chatwidget-online-dot" aria-hidden="true" />
+									)}
 									{headerSubtitle}
 								</div>
 							</div>
@@ -428,77 +565,98 @@ export default function ChatWidget() {
 
 						<button
 							className="chatwidget-close"
-							onClick={() => setOpen(false)}
+							onClick={closePanel}
 							aria-label="Close chat"
+							title="Close chat"
 						>
-							✕
+							<IconClose />
 						</button>
 					</div>
 
-					{bannerText && (
-						<div className="chatwidget-banner">{bannerText}</div>
-					)}
+					{bannerText && <div className="chatwidget-banner">{bannerText}</div>}
 
-					<div className="chatwidget-messages" ref={scrollRef}>
-						{messages.map((m) => {
-							const isEmptyBotTyping = m.id === TYPING_ID;
+					<div className="chatwidget-messages-wrap">
+						<div
+							className="chatwidget-messages"
+							ref={scrollRef}
+							onScroll={handleMessagesScroll}
+							aria-live="polite"
+							aria-atomic="false"
+						>
+							{messages.map((m) => {
+								const isEmptyBotTyping = m.id === TYPING_ID;
 
-							if (m.role === "system") {
+								if (m.role === "system") {
+									return (
+										<div key={m.id} className="chatwidget-system-row">
+											{m.text}
+											{m.retryText && (
+												<button
+													type="button"
+													className="chatwidget-retry-btn"
+													onClick={() => retrySend(m.retryText, m.id)}
+												>
+													<IconRefresh /> Retry
+												</button>
+											)}
+										</div>
+									);
+								}
+
 								return (
-									<div key={m.id} className="chatwidget-system-row">
-										{m.text}
-										{m.retryText && (
-											<button
-												type="button"
-												className="chatwidget-retry-btn"
-												onClick={() => retrySend(m.retryText, m.id)}
-											>
-												Retry
-											</button>
-										)}
+									<div
+										key={m.id}
+										className={`chatwidget-row chatwidget-row--${m.role}`}
+									>
+										{m.role === "bot" &&
+											(live ? (
+												<span
+													className="chatwidget-liveavatar chatwidget-liveavatar--xs"
+													aria-hidden="true"
+												>
+													{getInitials(m.from)}
+												</span>
+											) : (
+												<span
+													className="chatwidget-droplet chatwidget-droplet--xs"
+													aria-hidden="true"
+												></span>
+											))}
+
+										<div
+											className={`chatwidget-bubble chatwidget-bubble--${m.role}${
+												isEmptyBotTyping ? " chatwidget-bubble--typing" : ""
+											}`}
+										>
+											{m.from && (
+												<div className="chatwidget-bubble-from">{m.from}</div>
+											)}
+											{isEmptyBotTyping ? (
+												<span className="chatwidget-typing">
+													<span></span>
+													<span></span>
+													<span></span>
+												</span>
+											) : (
+												m.text
+											)}
+										</div>
 									</div>
 								);
-							}
+							})}
+						</div>
 
-							return (
-								<div
-									key={m.id}
-									className={`chatwidget-row chatwidget-row--${m.role}`}
-								>
-									{m.role === "bot" &&
-										(live ? (
-											<span
-												className="chatwidget-liveavatar chatwidget-liveavatar--xs"
-												aria-hidden="true"
-											>
-												{getInitials(m.from)}
-											</span>
-										) : (
-											<span
-												className="chatwidget-droplet chatwidget-droplet--xs"
-												aria-hidden="true"
-											></span>
-										))}
-
-									<div
-										className={`chatwidget-bubble chatwidget-bubble--${m.role}`}
-									>
-										{m.from && (
-											<div className="chatwidget-bubble-from">{m.from}</div>
-										)}
-										{isEmptyBotTyping ? (
-											<span className="chatwidget-typing">
-												<span></span>
-												<span></span>
-												<span></span>
-											</span>
-										) : (
-											m.text
-										)}
-									</div>
-								</div>
-							);
-						})}
+						{!isNearBottom && (
+							<button
+								type="button"
+								className="chatwidget-scrolldown"
+								onClick={scrollToBottom}
+								aria-label="Scroll to latest message"
+							>
+								<IconChevronDown />
+								{newMessageWaiting && <span className="chatwidget-scrolldown-dot" />}
+							</button>
+						)}
 					</div>
 
 					{status === "closed" && (
@@ -507,14 +665,11 @@ export default function ChatWidget() {
 							className="chatwidget-newconvo-btn"
 							onClick={startNewConversation}
 						>
-							🔄 Start a New Conversation
+							<IconRefresh /> Start a new conversation
 						</button>
 					)}
 
-					<form
-						className="chatwidget-inputbar"
-						onSubmit={handleSend}
-					>
+					<form className="chatwidget-inputbar" onSubmit={handleSend}>
 						<textarea
 							ref={textareaRef}
 							value={input}
@@ -540,30 +695,38 @@ export default function ChatWidget() {
 
 						<button
 							type="submit"
+							className={`chatwidget-sendbtn${sendPulse ? " chatwidget-sendbtn--pulse" : ""}`}
 							disabled={!input.trim() || sending || status === "closed"}
 							aria-label="Send message"
 						>
-							➤
+							<IconSend />
 						</button>
 					</form>
 				</div>
 			)}
 
 			<button
-				className={`chatwidget-toggle${live ? " chatwidget-toggle--live" : ""}`}
-				onClick={() => setOpen((o) => !o)}
+				className={`chatwidget-toggle${live ? " chatwidget-toggle--live" : ""}${
+					open ? " chatwidget-toggle--open" : ""
+				}${showNudge ? " chatwidget-toggle--nudge" : ""}`}
+				onClick={() => (open ? closePanel() : openPanel())}
 				aria-label={open ? "Close chat" : "Open chat"}
+				aria-expanded={open}
 			>
-				{live ? (
-					<span className="chatwidget-liveavatar chatwidget-liveavatar--sm" aria-hidden="true">
-						{claimedByName ? getInitials(claimedByName) : "🙋"}
+				<span className="chatwidget-toggle-iconwrap">
+					<span className="chatwidget-toggle-icon chatwidget-toggle-icon--chat" aria-hidden="true">
+						{live ? (
+							<span className="chatwidget-liveavatar chatwidget-liveavatar--sm" aria-hidden="true">
+								{claimedByName ? getInitials(claimedByName) : "🙋"}
+							</span>
+						) : (
+							<span className="chatwidget-droplet chatwidget-droplet--lg" aria-hidden="true"></span>
+						)}
 					</span>
-				) : (
-					<span
-						className="chatwidget-droplet chatwidget-droplet--lg"
-						aria-hidden="true"
-					></span>
-				)}
+					<span className="chatwidget-toggle-icon chatwidget-toggle-icon--close" aria-hidden="true">
+						<IconClose width="18" height="18" />
+					</span>
+				</span>
 
 				{!open && live && <span className="chatwidget-toggle-livedot" aria-hidden="true" />}
 				{!open && !live && unreadCount > 0 && (

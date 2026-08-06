@@ -1,11 +1,16 @@
 /* ════════════════════════════════════════════════════════════════════════
-   Fruitbean chat widget
+   Fruitbean chat widget — "ink drop" redesign
+   ────────────────────────────────────────────────────────────────────────
+   Signature idea: the droplet that already stood for the brand becomes the
+   through-line for motion, too — the toggle button breathes like a drop of
+   ink about to fall, the panel pops open with a little overshoot, and the
+   send button releases a small ink-ring on every message.
+
    Two visual modes, switched by adding/removing `chatwidget-panel--live`
-   on the panel root:
-     · AI mode   — navy header, green/blue droplet brand (default)
-     · Live mode — magenta "Live Support" header, once a human is
-       involved (awaiting_human / human). Same window, same saved thread,
-       different identity — so a handoff is unmistakable at a glance.
+   (and the matching `chatwidget-toggle--live`) on the relevant elements:
+     · AI mode   — deep-space navy header, green→cyan droplet brand
+     · Live mode — magenta "Live Support" header, once a human takes over.
+       Same window, same thread, unmistakably different identity.
    ════════════════════════════════════════════════════════════════════════ */
 
 .chatwidget-root {
@@ -13,40 +18,50 @@
   bottom: 24px;
   right: 24px;
   z-index: 9998;
-  font-family: 'Segoe UI', system-ui, sans-serif;
+  font-family: 'Plus Jakarta Sans', 'Segoe UI', system-ui, sans-serif;
+  -webkit-font-smoothing: antialiased;
 
   /* ── AI mode tokens (default) ── */
-  --cw-header-from: #1a1a2e;
-  --cw-header-to: #23233d;
+  --cw-header-from: #0a0a1e;
+  --cw-header-to: #1a2454;
   --cw-accent: #3ab549;
   --cw-accent2: #00aeef;
-  --cw-accent-soft: #eaf6ff;
-  --cw-accent-soft-text: #1a6fa8;
-  --cw-accent-soft-border: #d8ecfb;
+  --cw-accent-glow: rgba(0, 174, 239, 0.45);
+  --cw-accent-soft: #eaf9f2;
+  --cw-accent-soft-text: #197a45;
+  --cw-accent-soft-border: #cdeedd;
   --cw-label-color: #1a8fd1;
+  --cw-user-text: #ffffff;
 }
 
 /* ── Live Support mode tokens ── */
 .chatwidget-panel--live {
-  --cw-header-from: #7a1f52;
+  --cw-header-from: #5b0f38;
   --cw-header-to: #e0338a;
   --cw-accent: #e0338a;
   --cw-accent2: #ff6f91;
+  --cw-accent-glow: rgba(224, 51, 138, 0.45);
   --cw-accent-soft: #fdeef6;
   --cw-accent-soft-text: #a3195b;
   --cw-accent-soft-border: #f7d3e6;
   --cw-label-color: #c2255c;
 }
+.chatwidget-toggle--live {
+  --cw-accent: #e0338a;
+  --cw-accent2: #ff6f91;
+  --cw-accent-glow: rgba(224, 51, 138, 0.45);
+}
 
 /* ─── Ink-drop shape (signature element, AI mode) ─── */
 .chatwidget-droplet {
   display: inline-block;
-  background: linear-gradient(160deg, var(--cw-accent) 0%, var(--cw-accent2) 100%);
+  background: linear-gradient(155deg, var(--cw-accent) 0%, var(--cw-accent2) 100%);
   border-radius: 50% 50% 50% 0;
   transform: rotate(45deg);
   flex-shrink: 0;
+  box-shadow: 0 0 0 rgba(0, 0, 0, 0);
 }
-.chatwidget-droplet--lg { width: 26px; height: 26px; }
+.chatwidget-droplet--lg { width: 25px; height: 25px; }
 .chatwidget-droplet--sm { width: 16px; height: 16px; }
 .chatwidget-droplet--xs { width: 12px; height: 12px; margin-top: 8px; }
 
@@ -56,50 +71,117 @@
   align-items: center;
   justify-content: center;
   border-radius: 50%;
-  background: linear-gradient(160deg, var(--cw-accent) 0%, var(--cw-accent2) 100%);
+  background: linear-gradient(155deg, var(--cw-accent) 0%, var(--cw-accent2) 100%);
   color: #fff;
   font-weight: 700;
   flex-shrink: 0;
   letter-spacing: 0.2px;
 }
-.chatwidget-liveavatar--sm { width: 30px; height: 30px; font-size: 12px; }
+.chatwidget-liveavatar--sm { width: 28px; height: 28px; font-size: 12px; }
 .chatwidget-liveavatar--xs { width: 22px; height: 22px; font-size: 9.5px; margin-top: 2px; }
 
-/* ─── Toggle button ─── */
+/* ═══════════════════════════════════════════════════════════════════════
+   Toggle (FAB) button
+   ═══════════════════════════════════════════════════════════════════════ */
 .chatwidget-toggle {
-  width: 58px;
-  height: 58px;
+  width: 60px;
+  height: 60px;
   border-radius: 50%;
   border: none;
-  background: #1a1a2e;
+  background: linear-gradient(155deg, #12122a 0%, #1a1a2e 100%);
   display: flex;
   align-items: center;
   justify-content: center;
   cursor: pointer;
-  box-shadow: 0 6px 24px rgba(0,0,0,.25);
-  transition: transform .2s, background .3s;
+  box-shadow:
+    0 8px 26px rgba(10, 10, 30, 0.35),
+    0 0 0 1px rgba(255, 255, 255, 0.06) inset;
+  transition: transform 0.25s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.3s ease, background 0.35s ease;
   position: relative;
 }
 .chatwidget-toggle--live {
-  background: linear-gradient(135deg, #7a1f52 0%, #e0338a 100%);
+  background: linear-gradient(140deg, #5b0f38 0%, #e0338a 100%);
 }
-.chatwidget-toggle:hover { transform: translateY(-2px) scale(1.04); }
+.chatwidget-toggle:hover {
+  transform: translateY(-3px) scale(1.05);
+  box-shadow:
+    0 12px 30px rgba(10, 10, 30, 0.38),
+    0 0 22px var(--cw-accent-glow);
+}
+.chatwidget-toggle:active { transform: translateY(-1px) scale(0.97); }
+.chatwidget-toggle:focus-visible {
+  outline: 2px solid var(--cw-accent2);
+  outline-offset: 3px;
+}
 
-.chatwidget-toggle-badge {
+/* Gentle "someone's waiting to help" ring pulse — shown only for a genuine
+   invite (first-ever visit) or a real unread message, never constantly. */
+.chatwidget-toggle--nudge::before {
+  content: '';
   position: absolute;
-  top: -2px;
-  right: -2px;
-  background: #e0338a;
-  color: #fff;
-  font-size: 11px;
-  font-weight: 700;
-  width: 18px;
-  height: 18px;
+  inset: -7px;
   border-radius: 50%;
+  border: 2px solid var(--cw-accent2);
+  opacity: 0.65;
+  animation: cwRingPulse 2.2s ease-out infinite;
+  pointer-events: none;
+}
+@keyframes cwRingPulse {
+  0% { transform: scale(0.88); opacity: 0.55; }
+  75% { transform: scale(1.32); opacity: 0; }
+  100% { transform: scale(1.32); opacity: 0; }
+}
+
+/* Icon cross-fade: droplet/avatar ↔ close (×), driven purely by CSS off the
+   --open state class, so there's no flash of missing content mid-toggle. */
+.chatwidget-toggle-iconwrap {
+  position: relative;
+  width: 28px;
+  height: 28px;
   display: flex;
   align-items: center;
   justify-content: center;
-  border: 2px solid #fff;
+}
+.chatwidget-toggle-icon {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+  transition: opacity 0.22s ease, transform 0.28s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+.chatwidget-toggle-icon--close {
+  opacity: 0;
+  transform: rotate(-50deg) scale(0.4);
+}
+.chatwidget-toggle--open .chatwidget-toggle-icon--chat {
+  opacity: 0;
+  transform: rotate(50deg) scale(0.4);
+}
+.chatwidget-toggle--open .chatwidget-toggle-icon--close {
+  opacity: 1;
+  transform: rotate(0deg) scale(1);
+}
+
+.chatwidget-toggle-badge {
+  position: absolute;
+  top: -3px;
+  right: -3px;
+  background: linear-gradient(135deg, #ff6f91, #e0338a);
+  color: #fff;
+  font-size: 11px;
+  font-weight: 800;
+  min-width: 19px;
+  height: 19px;
+  padding: 0 4px;
+  border-radius: 999px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 2.5px solid #fff;
+  box-shadow: 0 2px 8px rgba(224, 51, 138, 0.5);
+  animation: cwPopIn 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
 }
 .chatwidget-toggle-livedot {
   position: absolute;
@@ -110,46 +192,86 @@
   border-radius: 50%;
   background: #22c55e;
   border: 2.5px solid #fff;
-  animation: chatwidgetPulseDot 1.8s infinite;
+  animation: cwPulseDot 1.8s infinite;
 }
-@keyframes chatwidgetPulseDot {
-  0%, 100% { box-shadow: 0 0 0 0 rgba(34,197,94,.55); }
-  70% { box-shadow: 0 0 0 6px rgba(34,197,94,0); }
+@keyframes cwPulseDot {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(34, 197, 94, 0.55); }
+  70% { box-shadow: 0 0 0 6px rgba(34, 197, 94, 0); }
+}
+@keyframes cwPopIn {
+  from { transform: scale(0); }
+  to { transform: scale(1); }
 }
 
-/* ─── Chat panel ─── */
+/* ═══════════════════════════════════════════════════════════════════════
+   Chat panel
+   ═══════════════════════════════════════════════════════════════════════ */
 .chatwidget-panel {
   position: absolute;
-  bottom: 74px;
+  bottom: 76px;
   right: 0;
-  width: 360px;
+  width: 372px;
   max-width: calc(100vw - 48px);
-  height: 520px;
+  height: 552px;
   max-height: calc(100vh - 140px);
   background: #fff;
-  border-radius: 20px;
-  box-shadow: 0 16px 56px rgba(0,0,0,.2);
+  border-radius: 22px;
+  box-shadow:
+    0 24px 60px rgba(10, 10, 30, 0.22),
+    0 6px 18px rgba(10, 10, 30, 0.1),
+    0 0 0 1px rgba(10, 10, 30, 0.04);
   display: flex;
   flex-direction: column;
   overflow: hidden;
-  animation: chatwidgetSlideUp .22s ease;
+  transform-origin: bottom right;
+  animation: cwPanelIn 0.32s cubic-bezier(0.34, 1.56, 0.64, 1);
 }
-@keyframes chatwidgetSlideUp {
-  from { opacity: 0; transform: translateY(12px); }
-  to   { opacity: 1; transform: translateY(0); }
+.chatwidget-panel--closing {
+  animation: cwPanelOut 0.19s ease forwards;
+}
+@keyframes cwPanelIn {
+  from { opacity: 0; transform: translateY(18px) scale(0.93); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+@keyframes cwPanelOut {
+  from { opacity: 1; transform: translateY(0) scale(1); }
+  to { opacity: 0; transform: translateY(10px) scale(0.96); }
 }
 
 /* ─── Header ─── */
 .chatwidget-header {
+  position: relative;
+  overflow: hidden;
   background: linear-gradient(135deg, var(--cw-header-from) 0%, var(--cw-header-to) 100%);
-  padding: 16px 16px;
+  padding: 15px 14px 15px 16px;
   display: flex;
   align-items: center;
   justify-content: space-between;
   flex-shrink: 0;
-  transition: background .35s ease;
+  transition: background 0.35s ease;
+}
+/* Ambient glow blob — a quiet nod to the site's drifting light wash,
+   scaled down to live behind the avatar. */
+.chatwidget-header::before {
+  content: '';
+  position: absolute;
+  width: 170px;
+  height: 170px;
+  right: -50px;
+  top: -70px;
+  border-radius: 50%;
+  background: radial-gradient(circle, var(--cw-accent2) 0%, transparent 72%);
+  opacity: 0.3;
+  filter: blur(6px);
+  animation: cwHeaderDrift 7s ease-in-out infinite alternate;
+  pointer-events: none;
+}
+@keyframes cwHeaderDrift {
+  from { transform: translate(0, 0) scale(1); }
+  to { transform: translate(-14px, 12px) scale(1.18); }
 }
 .chatwidget-header-info {
+  position: relative;
   display: flex;
   align-items: center;
   gap: 10px;
@@ -167,17 +289,18 @@
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+  letter-spacing: -0.1px;
 }
 .chatwidget-live-chip {
   flex-shrink: 0;
   display: inline-flex;
   align-items: center;
   gap: 4px;
-  background: rgba(255,255,255,.2);
+  background: rgba(255, 255, 255, 0.2);
   color: #fff;
   font-size: 9.5px;
   font-weight: 800;
-  letter-spacing: 0.4px;
+  letter-spacing: 0.5px;
   padding: 2px 6px 2px 5px;
   border-radius: 20px;
 }
@@ -187,127 +310,50 @@
   height: 5px;
   border-radius: 50%;
   background: #22c55e;
-  animation: chatwidgetPulseDot 1.8s infinite;
+  animation: cwPulseDot 1.8s infinite;
 }
 .chatwidget-subtitle {
-  color: rgba(255,255,255,.65);
+  color: rgba(255, 255, 255, 0.68);
   font-size: 11px;
   margin-top: 2px;
   display: flex;
   align-items: center;
   gap: 5px;
 }
-.chatwidget-reconnect-dot {
+.chatwidget-online-dot {
   width: 6px;
   height: 6px;
   border-radius: 50%;
-  background: #ffb020;
+  background: var(--cw-accent2);
   flex-shrink: 0;
-  animation: chatwidgetPulseDot 1.4s infinite;
+  box-shadow: 0 0 6px var(--cw-accent2);
+}
+.chatwidget-reconnect-icon {
+  color: #ffb020;
+  flex-shrink: 0;
+  animation: cwFlicker 1.4s infinite;
+}
+@keyframes cwFlicker {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.4; }
 }
 .chatwidget-close {
-  background: transparent;
+  position: relative;
+  background: rgba(255, 255, 255, 0.08);
   border: none;
-  color: rgba(255,255,255,.6);
-  font-size: 14px;
+  color: rgba(255, 255, 255, 0.75);
   cursor: pointer;
-  padding: 4px;
-  flex-shrink: 0;
-}
-.chatwidget-close:hover { color: #fff; }
-
-/* ─── Message list ─── */
-.chatwidget-messages {
-  flex: 1;
-  overflow-y: auto;
-  padding: 16px;
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-  background: #f8f9fa;
-}
-
-.chatwidget-row {
-  display: flex;
-  gap: 8px;
-  max-width: 88%;
-}
-.chatwidget-row--bot { align-self: flex-start; }
-.chatwidget-row--user { align-self: flex-end; }
-
-.chatwidget-bubble {
-  padding: 9px 13px;
-  border-radius: 14px;
-  font-size: 13.5px;
-  line-height: 1.5;
-  white-space: pre-wrap;
-}
-.chatwidget-bubble--bot {
-  background: #fff;
-  border: 1.5px solid #e8eaed;
-  color: #1a1a2e;
-  border-top-left-radius: 4px;
-}
-.chatwidget-bubble--user {
-  background: linear-gradient(135deg, var(--cw-accent) 0%, var(--cw-accent2) 100%);
-  color: #fff;
-  border-top-right-radius: 4px;
-}
-
-/* Typing indicator */
-.chatwidget-typing { display: flex; gap: 4px; padding: 12px 13px; }
-.chatwidget-typing span {
-  width: 6px; height: 6px; border-radius: 50%;
-  background: #9aa0a6;
-  animation: chatwidgetBounce 1.2s infinite;
-}
-.chatwidget-typing span:nth-child(2) { animation-delay: .15s; }
-.chatwidget-typing span:nth-child(3) { animation-delay: .3s; }
-@keyframes chatwidgetBounce {
-  0%, 60%, 100% { transform: translateY(0); opacity: .5; }
-  30% { transform: translateY(-4px); opacity: 1; }
-}
-
-/* ─── Input bar ─── */
-.chatwidget-inputbar {
-  display: flex;
-  gap: 8px;
-  padding: 12px;
-  border-top: 1.5px solid #eee;
-  background: #fff;
-  flex-shrink: 0;
-}
-.chatwidget-inputbar textarea {
-  flex: 1;
-  border: 1.5px solid #e8eaed;
-  border-radius: 18px;
-  padding: 9px 14px;
-  font-size: 13px;
-  font-family: inherit;
-  outline: none;
-  resize: none;
-  max-height: 100px;
-  overflow-y: auto;
-  line-height: 1.4;
-  transition: border-color .2s;
-}
-.chatwidget-inputbar textarea:focus { border-color: var(--cw-accent); }
-.chatwidget-inputbar textarea:disabled { background: #fafafa; color: #aaa; }
-
-.chatwidget-inputbar button {
-  width: 36px;
-  height: 36px;
+  width: 28px;
+  height: 28px;
   border-radius: 50%;
-  border: none;
-  background: linear-gradient(135deg, var(--cw-accent) 0%, var(--cw-accent2) 100%);
-  color: #fff;
-  font-size: 14px;
-  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   flex-shrink: 0;
-  transition: opacity .2s, transform .1s;
+  transition: background 0.18s ease, color 0.18s ease, transform 0.15s ease;
 }
-.chatwidget-inputbar button:hover:not(:disabled) { transform: scale(1.05); }
-.chatwidget-inputbar button:disabled { opacity: .4; cursor: not-allowed; transform: none; }
+.chatwidget-close:hover { background: rgba(255, 255, 255, 0.16); color: #fff; }
+.chatwidget-close:active { transform: scale(0.9); }
 
 /* ─── Human handoff banner ─── */
 .chatwidget-banner {
@@ -315,20 +361,155 @@
   color: var(--cw-accent-soft-text);
   font-size: 11.5px;
   font-weight: 600;
+  line-height: 1.4;
   text-align: center;
-  padding: 8px 12px;
+  padding: 8px 14px;
   border-bottom: 1px solid var(--cw-accent-soft-border);
   flex-shrink: 0;
-  transition: background .3s ease, color .3s ease;
+  transition: background 0.3s ease, color 0.3s ease, border-color 0.3s ease;
+  animation: cwBannerIn 0.25s ease;
+}
+@keyframes cwBannerIn {
+  from { opacity: 0; max-height: 0; padding-top: 0; padding-bottom: 0; }
+  to { opacity: 1; max-height: 60px; }
+}
+
+/* ═══════════════════════════════════════════════════════════════════════
+   Message list
+   ═══════════════════════════════════════════════════════════════════════ */
+.chatwidget-messages-wrap {
+  position: relative;
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  background: #f7f8fb;
+}
+.chatwidget-messages {
+  flex: 1;
+  overflow-y: auto;
+  padding: 18px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 13px;
+  scroll-behavior: smooth;
+}
+.chatwidget-messages::-webkit-scrollbar { width: 6px; }
+.chatwidget-messages::-webkit-scrollbar-track { background: transparent; }
+.chatwidget-messages::-webkit-scrollbar-thumb {
+  background: linear-gradient(180deg, var(--cw-accent), var(--cw-accent2));
+  opacity: 0.5;
+  border-radius: 4px;
+}
+/* Soft fade where messages meet the input bar, hinting there's more above
+   when scrolled up without needing a hard cut line. */
+.chatwidget-messages-wrap::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 20px;
+  background: linear-gradient(to bottom, rgba(247, 248, 251, 0), rgba(247, 248, 251, 0.95));
+  pointer-events: none;
+}
+
+.chatwidget-row {
+  display: flex;
+  gap: 8px;
+  max-width: 88%;
+  animation: cwRowIn 0.3s ease both;
+}
+.chatwidget-row--bot { align-self: flex-start; }
+.chatwidget-row--user { align-self: flex-end; }
+@keyframes cwRowIn {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.chatwidget-bubble {
+  padding: 10px 13px;
+  border-radius: 15px;
+  font-size: 13.5px;
+  line-height: 1.52;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+.chatwidget-bubble--bot {
+  background: #fff;
+  border: 1.5px solid #e9ebef;
+  color: #1a1a2e;
+  border-top-left-radius: 4px;
+  box-shadow: 0 1px 2px rgba(10, 10, 30, 0.03);
+}
+.chatwidget-bubble--user {
+  background: linear-gradient(135deg, var(--cw-accent) 0%, var(--cw-accent2) 100%);
+  color: var(--cw-user-text);
+  border-top-right-radius: 4px;
+  box-shadow: 0 3px 10px var(--cw-accent-glow);
+}
+.chatwidget-bubble--typing { padding: 4px 13px; }
+
+/* Typing indicator — three little ink drops */
+.chatwidget-typing { display: flex; gap: 4px; padding: 10px 0; }
+.chatwidget-typing span {
+  width: 6.5px;
+  height: 6.5px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, var(--cw-accent), var(--cw-accent2));
+  animation: cwBounce 1.2s infinite;
+}
+.chatwidget-typing span:nth-child(2) { animation-delay: 0.15s; }
+.chatwidget-typing span:nth-child(3) { animation-delay: 0.3s; }
+@keyframes cwBounce {
+  0%, 60%, 100% { transform: translateY(0); opacity: 0.55; }
+  30% { transform: translateY(-4px); opacity: 1; }
+}
+
+/* ─── Scroll-to-latest pill ─── */
+.chatwidget-scrolldown {
+  position: absolute;
+  right: 14px;
+  bottom: 14px;
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  background: #fff;
+  border: 1.5px solid #e9ebef;
+  box-shadow: 0 6px 16px rgba(10, 10, 30, 0.14);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  color: var(--cw-accent2);
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+  animation: cwPopIn 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+.chatwidget-scrolldown:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 20px rgba(10, 10, 30, 0.18);
+}
+.chatwidget-scrolldown-dot {
+  position: absolute;
+  top: -2px;
+  right: -2px;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: var(--cw-accent);
+  border: 2px solid #fff;
 }
 
 /* ─── System messages (e.g. "connecting you...", "conversation closed") ─── */
 .chatwidget-system-row {
   align-self: center;
+  display: flex;
+  align-items: center;
+  gap: 4px;
   font-size: 11px;
   color: #9aa0a6;
   text-align: center;
   padding: 2px 10px;
+  animation: cwRowIn 0.25s ease both;
 }
 
 /* ─── Admin name label above a human reply bubble ─── */
@@ -339,47 +520,167 @@
   margin-bottom: 2px;
 }
 
-/* ─── "Start a New Conversation" button (shown once a chat is closed) ─── */
+/* ─── "Start a new conversation" (shown once a chat is closed) ─── */
 .chatwidget-newconvo-btn {
   flex-shrink: 0;
-  margin: 0 12px 10px;
-  padding: 7px 10px;
-  border-radius: 10px;
-  border: 1.5px solid #e8eaed;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  margin: 0 14px 12px;
+  padding: 9px 12px;
+  border-radius: 12px;
+  border: 1.5px solid #e9ebef;
   background: #fff;
   color: #1a1a2e;
-  font-size: 12px;
-  font-weight: 600;
+  font-size: 12.5px;
+  font-weight: 700;
+  font-family: inherit;
   cursor: pointer;
-  transition: border-color .2s, background .2s;
+  transition: border-color 0.2s ease, background 0.2s ease, transform 0.15s ease, color 0.2s ease;
 }
-.chatwidget-newconvo-btn:hover { border-color: var(--cw-accent); background: #f3fbf4; }
+.chatwidget-newconvo-btn svg { transition: transform 0.4s ease; }
+.chatwidget-newconvo-btn:hover {
+  border-color: var(--cw-accent);
+  background: var(--cw-accent-soft);
+  color: var(--cw-accent-soft-text);
+}
+.chatwidget-newconvo-btn:hover svg { transform: rotate(180deg); }
+.chatwidget-newconvo-btn:active { transform: scale(0.98); }
 
 /* ─── Inline retry action inside a system notice (e.g. failed send) ─── */
 .chatwidget-retry-btn {
-  margin-left: 6px;
-  padding: 1px 8px;
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  margin-left: 4px;
+  padding: 2px 9px;
   border-radius: 999px;
   border: 1px solid #d0d3d8;
   background: #fff;
   color: #1a1a2e;
   font-size: 10.5px;
   font-weight: 700;
+  font-family: inherit;
   cursor: pointer;
+  transition: border-color 0.15s ease, color 0.15s ease, background 0.15s ease;
 }
-.chatwidget-retry-btn:hover { border-color: var(--cw-accent); color: var(--cw-accent); }
+.chatwidget-retry-btn:hover {
+  border-color: var(--cw-accent);
+  color: var(--cw-accent);
+  background: var(--cw-accent-soft);
+}
+
+/* ═══════════════════════════════════════════════════════════════════════
+   Input bar
+   ═══════════════════════════════════════════════════════════════════════ */
+.chatwidget-inputbar {
+  display: flex;
+  align-items: flex-end;
+  gap: 8px;
+  padding: 12px;
+  border-top: 1.5px solid #eef0f3;
+  background: #fff;
+  flex-shrink: 0;
+}
+.chatwidget-inputbar textarea {
+  flex: 1;
+  border: 1.5px solid #e9ebef;
+  border-radius: 18px;
+  padding: 9px 14px;
+  font-size: 13px;
+  font-family: inherit;
+  outline: none;
+  resize: none;
+  max-height: 100px;
+  overflow-y: auto;
+  line-height: 1.4;
+  background: #f7f8fb;
+  transition: border-color 0.2s ease, background 0.2s ease, box-shadow 0.2s ease;
+}
+.chatwidget-inputbar textarea:focus {
+  border-color: var(--cw-accent2);
+  background: #fff;
+  box-shadow: 0 0 0 3px var(--cw-accent-glow, rgba(0, 174, 239, 0.15));
+}
+.chatwidget-inputbar textarea:disabled { background: #fafafa; color: #aaa; }
+.chatwidget-inputbar textarea::placeholder { color: #9aa0ab; }
+
+.chatwidget-sendbtn {
+  position: relative;
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  border: none;
+  background: linear-gradient(135deg, var(--cw-accent) 0%, var(--cw-accent2) 100%);
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: opacity 0.2s ease, transform 0.15s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.2s ease;
+  box-shadow: 0 3px 10px var(--cw-accent-glow);
+}
+.chatwidget-sendbtn svg { transform: translateX(-1px); }
+.chatwidget-sendbtn:hover:not(:disabled) { transform: scale(1.08); }
+.chatwidget-sendbtn:active:not(:disabled) { transform: scale(0.94); }
+.chatwidget-sendbtn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
+}
+/* Small ink-ring release on send */
+.chatwidget-sendbtn--pulse::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  background: radial-gradient(circle, var(--cw-accent2) 0%, transparent 68%);
+  animation: cwSendPulse 0.45s ease-out;
+  pointer-events: none;
+}
+@keyframes cwSendPulse {
+  from { transform: scale(0.6); opacity: 0.6; }
+  to { transform: scale(2.1); opacity: 0; }
+}
 
 /* ─── Responsive ─── */
 @media (max-width: 480px) {
   .chatwidget-root { bottom: 16px; right: 16px; }
-  .chatwidget-panel { width: calc(100vw - 32px); }
+  .chatwidget-panel {
+    width: calc(100vw - 24px);
+    height: calc(100vh - 116px);
+    right: -8px;
+    border-radius: 20px;
+  }
 }
 
 /* ─── Reduced motion ─── */
 @media (prefers-reduced-motion: reduce) {
-  .chatwidget-panel { animation: none; }
-  .chatwidget-typing span { animation: none; }
+  .chatwidget-panel,
+  .chatwidget-panel--closing,
+  .chatwidget-row,
+  .chatwidget-system-row,
+  .chatwidget-banner,
+  .chatwidget-toggle-badge,
+  .chatwidget-scrolldown {
+    animation: none;
+  }
+  .chatwidget-typing span,
   .chatwidget-toggle-livedot,
   .chatwidget-live-chip::before,
-  .chatwidget-reconnect-dot { animation: none; }
+  .chatwidget-reconnect-icon,
+  .chatwidget-toggle--nudge::before,
+  .chatwidget-header::before {
+    animation: none;
+  }
+  .chatwidget-toggle,
+  .chatwidget-toggle-icon,
+  .chatwidget-sendbtn,
+  .chatwidget-close,
+  .chatwidget-newconvo-btn svg {
+    transition: none;
+  }
 }

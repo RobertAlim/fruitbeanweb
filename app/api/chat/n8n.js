@@ -29,7 +29,7 @@
 
 const WEBHOOK_URL =
   process.env.N8N_CHAT_WEBHOOK_URL ||
-  'https://fruitbean.app.n8n.cloud/webhook/fruitbean-chat';
+  'https://fruitbean1.app.n8n.cloud/webhook/fruitbean-chat';
 
 // n8n workflows can occasionally hang (a stuck node, a slow LLM call, etc).
 // Without a timeout, a single hung request would leave the visitor staring

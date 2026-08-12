@@ -983,7 +983,7 @@ section { padding: 70px 60px; }
   box-shadow:
     3px 3px 0 rgba(10,10,30,0.035);
 
-  /* Scroll reveal — starts hidden */
+  --reveal-delay: 0s;
   opacity: 0;
   translate: 0 22px;
 

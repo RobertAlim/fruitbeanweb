@@ -1,10 +1,11 @@
 'use client';
-import { useState, useEffect, useRef } from 'react';
+import { useState, useRef } from 'react';
 
 export default function Hero() {
   const [current, setCurrent] = useState(0);
   const total = 5;
-  const progressRef = useRef(null);
+  const touchStartX = useRef(null);
+  const touchDeltaX = useRef(0);
 
   function goToSlide(n) { setCurrent(((n % total) + total) % total); }
   function nextSlide()  { setCurrent(c => (c + 1) % total); }
@@ -14,26 +15,32 @@ export default function Hero() {
     if (panel) panel.scrollIntoView({ behavior: 'smooth' });
   }
 
-  // Progress bar drives the auto-advance
-  useEffect(() => {
-    const bar = progressRef.current;
-    if (!bar) return;
-
-    bar.style.transition = 'none';
-    bar.style.width = '0%';
-    bar.getBoundingClientRect();
-    bar.style.transition = 'width 5s linear';
-    bar.style.width = '100%';
-
-    const timer = setTimeout(() => {
-      setCurrent(c => (c + 1) % total);
-    }, 5000);
-
-    return () => clearTimeout(timer);
-  }, [current]);
+  // ── Swipe support (mobile) ──────────────────────────────────────────
+  // No JS animation loop needed — just reads the gesture and flips the
+  // slide, letting the existing CSS transition handle the motion.
+  function handleTouchStart(e) {
+    touchStartX.current = e.touches[0].clientX;
+    touchDeltaX.current = 0;
+  }
+  function handleTouchMove(e) {
+    if (touchStartX.current === null) return;
+    touchDeltaX.current = e.touches[0].clientX - touchStartX.current;
+  }
+  function handleTouchEnd() {
+    const SWIPE_THRESHOLD = 40;
+    if (touchDeltaX.current > SWIPE_THRESHOLD) prevSlide();
+    else if (touchDeltaX.current < -SWIPE_THRESHOLD) nextSlide();
+    touchStartX.current = null;
+    touchDeltaX.current = 0;
+  }
 
   return (
-    <div className="hero">
+    <div
+      className="hero"
+      onTouchStart={handleTouchStart}
+      onTouchMove={handleTouchMove}
+      onTouchEnd={handleTouchEnd}
+    >
       <div className="slides" style={{ transform: `translateX(-${current * 100}%)` }}>
 
         {/* Slide 1 */}
@@ -86,7 +93,7 @@ export default function Hero() {
               {/* Row 1 */}
               <div className="top-printer-row top-printer-row--left">
                 <div className="top-printer-img">
-                  <img src="TOP1.png" alt="Epson L3210" />
+                  <img src="TOP1.png" alt="Epson L3210" loading="lazy" />
                 </div>
                 <div className="top-printer-desc">
                 <span className="top-printer-badge">#1</span>
@@ -109,14 +116,14 @@ export default function Hero() {
                   <span className="top-printer-rate">₱1,500<small>/mo</small></span>
                 </div>
                 <div className="top-printer-img">
-                  <img src="TOP2.png" alt="Epson L3110" />
+                  <img src="TOP2.png" alt="Epson L3110" loading="lazy" />
                 </div>
               </div>
 
               {/* Row 3 */}
               <div className="top-printer-row top-printer-row--left">
                 <div className="top-printer-img">
-                  <img src="TOP3.png" alt="Epson L121" />
+                  <img src="TOP3.png" alt="Epson L121" loading="lazy" />
                 </div>
                 <div className="top-printer-desc">
                   <span className="top-printer-badge" style={{ background: '#f5c518', color: '#1a1a2e' }}>#3</span>
@@ -159,12 +166,12 @@ export default function Hero() {
               </ul>
             </div>
             <div className="slide4-collage">
-              <div className="s4-photo s4-photo-1"><img src="images/TECH-SUPPORT.jpg" alt="Tech Support" /></div>
-              <div className="s4-photo s4-photo-2"><img src="images/REPAIR.jpg" alt=" Repair" /></div>
-              <div className="s4-photo s4-photo-3"><img src="images/MAINTENANCE-1.jpg" alt="Maintenance" /></div>
-              <div className="s4-photo s4-photo-4"><img src="images/INK-REFILL.jpg" alt="Ink Supply" /></div>
-              <div className="s4-photo s4-photo-5"><img src="images/SETUP.jpg" alt="SETUP" /></div>
-              <div className="s4-photo s4-photo-6"><img src="images/MAINTENANCE-2.jpg" alt="Delivery" /></div>
+              <div className="s4-photo s4-photo-1"><img src="images/TECH-SUPPORT.jpg" alt="Tech Support" loading="lazy" /></div>
+              <div className="s4-photo s4-photo-2"><img src="images/REPAIR.jpg" alt=" Repair" loading="lazy" /></div>
+              <div className="s4-photo s4-photo-3"><img src="images/MAINTENANCE-1.jpg" alt="Maintenance" loading="lazy" /></div>
+              <div className="s4-photo s4-photo-4"><img src="images/INK-REFILL.jpg" alt="Ink Supply" loading="lazy" /></div>
+              <div className="s4-photo s4-photo-5"><img src="images/SETUP.jpg" alt="SETUP" loading="lazy" /></div>
+              <div className="s4-photo s4-photo-6"><img src="images/MAINTENANCE-2.jpg" alt="Delivery" loading="lazy" /></div>
             </div>
           </div>
         </div>
@@ -193,7 +200,7 @@ export default function Hero() {
               </div>
             </div>
             <div className="slide5-photo">
-              <img src="images/INK.png" alt="Fruitbean Premium Ink" />
+              <img src="images/INK.png" alt="Fruitbean Premium Ink" loading="lazy" />
               <div className="slide5-photo-badge"><span>✦</span> Premium Quality Ink</div>
             </div>
           </div>
@@ -204,17 +211,20 @@ export default function Hero() {
       {/* Dots */}
       <div className="slider-dots">
         {[0, 1, 2, 3, 4].map(i => (
-          <button key={i} className={`dot${current === i ? ' active' : ''}`} onClick={() => goToSlide(i)}></button>
+          <button
+            key={i}
+            className={`dot${current === i ? ' active' : ''}`}
+            onClick={() => goToSlide(i)}
+            aria-label={`Go to slide ${i + 1}`}
+          ></button>
         ))}
       </div>
 
       {/* Arrows */}
       <div className="slider-arrows">
-        <button className="arrow-btn" onClick={prevSlide}>&#8249;</button>
-        <button className="arrow-btn" onClick={nextSlide}>&#8250;</button>
+        <button className="arrow-btn" onClick={prevSlide} aria-label="Previous slide">&#8249;</button>
+        <button className="arrow-btn" onClick={nextSlide} aria-label="Next slide">&#8250;</button>
       </div>
-
-      <div className="slide-progress" ref={progressRef}></div>
     </div>
   );
 }

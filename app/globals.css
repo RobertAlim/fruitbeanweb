@@ -504,25 +504,6 @@ nav {
   box-shadow: 0 0 14px var(--neon-green), 0 0 30px rgba(57,255,20,0.4);
 }
 
-/* Rainbow animated progress bar */
-.slide-progress {
-  position: absolute;
-  bottom: 0; left: 0;
-  height: 4px;
-  background: linear-gradient(90deg,
-    var(--neon-cyan) 0%,
-    var(--neon-green) 33%,
-    var(--neon-magenta) 66%,
-    var(--neon-yellow) 100%);
-  background-size: 300% 100%;
-  animation: progressRainbow 2s linear infinite;
-  z-index: 10;
-  box-shadow: 0 0 12px rgba(0,245,255,0.7), 0 0 24px rgba(57,255,20,0.4);
-}
-@keyframes progressRainbow {
-  0%   { background-position: 0% 0%; }
-  100% { background-position: 300% 0%; }
-}
 @keyframes progress { from { width: 0; } to { width: 100%; } }
 
 /* ─── SLIDE 3 — TOP 3 PRINTERS ─── */
@@ -1173,5 +1154,36 @@ section { padding: 70px 60px; }
     height: 28vw !important;
     max-height: 120px;
     transform: none !important;
+  }
+/* ─── Hero perf on phones ───────────────────────────────────────
+     Blurred, animated blobs + a repeating-gradient scanline overlay
+     running across 5 stacked slides simultaneously is expensive on
+     low-end phones. Keep the same colors/shapes, just cheaper. ─── */
+  .blob {
+    filter: blur(28px);
+    opacity: 0.22;
+    animation-duration: 14s;
+  }
+  .slide::after {
+    display: none;
+  }
+
+  /* Swipe now replaces the arrows as the primary way to navigate on
+     touch devices, so hide them to declutter; the dots stay. */
+  .slider-arrows { display: none; }
+  .slider-dots { bottom: 16px; gap: 10px; }
+  .dot { width: 10px; height: 10px; } /* bigger tap target */
+
+  body::before {
+    background:
+      radial-gradient(ellipse 500px 350px at 15% 20%, rgba(0,245,255,0.025) 0%, transparent 70%),
+      radial-gradient(ellipse 400px 280px at 85% 75%, rgba(255,0,212,0.02) 0%, transparent 70%);
+    animation-duration: 24s;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .blob, .slide::after, body::before, .slide-content, .top-printer-desc {
+    animation: none !important;
   }
 }

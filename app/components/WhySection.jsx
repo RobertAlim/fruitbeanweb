@@ -4,22 +4,39 @@ import { useEffect } from 'react';
 
 export default function WhySection() {
   useEffect(() => {
-    const observer = new IntersectionObserver(
+    // Reveal animation for text/cards — re-triggers every time you scroll
+    // back into view (toggle, not just add)
+    const revealObserver = new IntersectionObserver(
       entries => {
         entries.forEach(entry => {
-          if (entry.isIntersecting) {
-            entry.target.classList.add('visible');
-          }
+          entry.target.classList.toggle('visible', entry.isIntersecting);
         });
       },
       { threshold: 0.12 }
     );
 
-    document.querySelectorAll('.reveal').forEach(el => {
-      observer.observe(el);
+    document.querySelectorAll('.why-section .reveal').forEach(el => {
+      revealObserver.observe(el);
     });
 
-    return () => observer.disconnect();
+    // Ink bars — fill on enter, deplete on exit
+    const inkObserver = new IntersectionObserver(
+      entries => {
+        entries.forEach(entry => {
+          entry.target.classList.toggle('animate', entry.isIntersecting);
+        });
+      },
+      { threshold: 0.3 }
+    );
+
+    document.querySelectorAll('.ink-bar-inner').forEach(el => {
+      inkObserver.observe(el);
+    });
+
+    return () => {
+      revealObserver.disconnect();
+      inkObserver.disconnect();
+    };
   }, []);
 
   return (
@@ -279,7 +296,7 @@ export default function WhySection() {
                 style={{
                   '--h': '92%',
                   background: '#00aeef',
-                  animationDelay: '0.18s'
+                  transitionDelay: '0.18s'
                 }}
               ></div>
             </div>
@@ -300,7 +317,7 @@ export default function WhySection() {
                 style={{
                   '--h': '78%',
                   background: '#f5c518',
-                  animationDelay: '0.36s'
+                  transitionDelay: '0.36s'
                 }}
               ></div>
             </div>
@@ -321,7 +338,7 @@ export default function WhySection() {
                 style={{
                   '--h': '95%',
                   background: '#222',
-                  animationDelay: '0.54s'
+                  transitionDelay: '0.54s'
                 }}
               ></div>
             </div>

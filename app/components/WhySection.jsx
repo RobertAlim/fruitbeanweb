@@ -15,21 +15,42 @@ export default function WhySection() {
       { threshold: 0.12 }
     );
 
-    document.querySelectorAll('.why-section .reveal').forEach(el => {
-      revealObserver.observe(el);
-    });
+    // NOTE: '.why-item' cards are observed directly now (no longer via
+    // the generic '.reveal' class) — see the class-name change below and
+    // the explanation of why that fixes the desktop reveal bug.
+    document
+      .querySelectorAll('.why-section .reveal, .why-section .why-item')
+      .forEach(el => {
+        revealObserver.observe(el);
+      });
 
-    // Ink bars — fill on enter, deplete on exit
+    // Ink bars — fill once, when they scroll into view.
+    //
+    // IMPORTANT: we observe '.ink-bar-outer' (the fixed-height container),
+    // NOT '.ink-bar-inner' (the bar that starts at scaleY(0)). Observing
+    // the inner bar meant IntersectionObserver was trying to measure the
+    // visibility of an element that was squashed to ~0px tall before it
+    // animated — an unstable, flicker-prone measurement that got worse
+    // with scroll speed and zoom. The outer wrapper never changes size,
+    // so its intersection ratio is stable.
+    //
+    // We also only fill once (unobserve after triggering) instead of
+    // toggling on exit — the previous toggle-on-exit behavior could catch
+    // a bar mid-transition and leave it partially filled.
     const inkObserver = new IntersectionObserver(
       entries => {
         entries.forEach(entry => {
-          entry.target.classList.toggle('animate', entry.isIntersecting);
+          if (entry.isIntersecting) {
+            const bar = entry.target.querySelector('.ink-bar-inner');
+            if (bar) bar.classList.add('animate');
+            inkObserver.unobserve(entry.target);
+          }
         });
       },
       { threshold: 0.3 }
     );
 
-    document.querySelectorAll('.ink-bar-inner').forEach(el => {
+    document.querySelectorAll('.ink-bar-outer').forEach(el => {
       inkObserver.observe(el);
     });
 
@@ -71,7 +92,10 @@ export default function WhySection() {
         <div className="why-grid">
 
           {/* 01 — FAST SERVICE */}
-          <article className="why-item reveal">
+          {/* className changed: "why-item reveal" -> "why-item"
+              (the card's own CSS already fully handles its reveal;
+              keeping "reveal" here was the cause of the desktop glitch) */}
+          <article className="why-item">
             <div className="why-item-top">
               <span className="why-item-number">01</span>
 
@@ -116,7 +140,7 @@ export default function WhySection() {
           </article>
 
           {/* 02 — QUALITY INKS */}
-          <article className="why-item reveal">
+          <article className="why-item">
             <div className="why-item-top">
               <span className="why-item-number">02</span>
 
@@ -156,7 +180,7 @@ export default function WhySection() {
           </article>
 
           {/* 03 — AFFORDABLE */}
-          <article className="why-item reveal">
+          <article className="why-item">
             <div className="why-item-top">
               <span className="why-item-number">03</span>
 
@@ -195,7 +219,7 @@ export default function WhySection() {
           </article>
 
           {/* 04 — GUARANTEED */}
-          <article className="why-item reveal">
+          <article className="why-item">
             <div className="why-item-top">
               <span className="why-item-number">04</span>
 

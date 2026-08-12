@@ -31,16 +31,6 @@
   --text:         #1a1a2e;
   --text-muted:   #666;
   --white:        #fff;
-  --cream:        #ffffff;
-  --cream-soft:   #ffffff;
-
-  /* Neon variants — kept in the palette for any external refs,
-     but no longer used in the stylesheet itself. */
-  --neon-green:   #39ff14;
-  --neon-cyan:    #00f5ff;
-  --neon-magenta: #ff00d4;
-  --neon-yellow:  #fff000;
-  --neon-blue:    #00aaff;
 }
 
 html { scroll-behavior: smooth; }
@@ -1386,7 +1376,9 @@ section { padding: 70px 60px; }
   animation-iteration-count: 1;
   animation-direction: normal;
   animation-fill-mode: forwards;
-  animation-play-state: running;
+  /* Starts paused — JS must add .animate to .ink-bar-inner (or a parent)
+     when the Why section enters the viewport via IntersectionObserver */
+  animation-play-state: paused;
 
   will-change: transform;
 
@@ -1444,6 +1436,12 @@ section { padding: 70px 60px; }
   100% {
     transform: scaleY(1);
   }
+}
+
+/* JS: inkBarEl.classList.add('animate') inside your IntersectionObserver
+   callback when the Why section (or ink panel) enters the viewport. */
+.ink-bar-inner.animate {
+  animation-play-state: running;
 }
 
 .ink-bar-label {
@@ -1539,6 +1537,13 @@ section { padding: 70px 60px; }
 ───────────────────────────────────────── */
 
 @media (prefers-reduced-motion: reduce) {
+  /* Kill eye-candy animations globally */
+  .blob, .slide-content, .inkDrip {
+    animation: none !important;
+  }
+
+  /* Kill transitions on reveal elements (they snap into place instead) */
+  .reveal,
   .why-section .reveal,
   .why-item,
   .why-item-icon,
@@ -1546,7 +1551,10 @@ section { padding: 70px 60px; }
     transition: none !important;
   }
 
-  .ink-bar-inner {
+  /* Ink bars: intentionally keep the fill animation running.
+     Override paused default — these are data visuals, not decoration. */
+  .ink-bar-inner,
+  .ink-bar-inner.animate {
     animation-name: inkBarFill !important;
     animation-duration: 2s !important;
     animation-timing-function: cubic-bezier(0.22, 1, 0.36, 1) !important;
@@ -1788,11 +1796,4 @@ section { padding: 70px 60px; }
   .slider-arrows { display: none; }
   .slider-dots { bottom: 16px; gap: 10px; }
   .dot { width: 10px; height: 10px; } /* bigger tap target */
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .blob, .slide-content, .reveal, .ink-bar-inner, .inkDrip {
-    animation: none !important;
-    transition: none !important;
-  }
 }

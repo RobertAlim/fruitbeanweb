@@ -1007,7 +1007,7 @@ section { padding: 70px 60px; }
   translate: 0 0;
 }
 
-.why-item:hover {
+.why-grid .why-item:hover {
   transform: translate(-3px, -5px);
 
   background: #ffffff;

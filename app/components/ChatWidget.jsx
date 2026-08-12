@@ -9,8 +9,9 @@ const POLL_MS = 4000;
 const BACKGROUND_POLL_MS = 15000; // lighter polling while the widget is minimized
 const POLL_FAILS_BEFORE_WARNING = 2;
 const TYPING_ID = "__typing__";
-const CLOSE_ANIM_MS = 190; // keep in sync with .chatwidget-panel--closing duration in chatwidget.css
+const CLOSE_ANIM_MS = 220; // keep in sync with .chatwidget-panel--closing duration in chatwidget.css
 const NEAR_BOTTOM_PX = 64;
+const MOBILE_QUERY = "(max-width: 600px)";
 
 const WELCOME_MESSAGE = {
 	id: "__welcome__",
@@ -175,6 +176,19 @@ export default function ChatWidget() {
 			if (focusTimeoutRef.current) clearTimeout(focusTimeoutRef.current);
 		};
 	}, []);
+
+	// On phones the panel becomes a full bottom sheet — lock background
+	// scroll while it's up so the page underneath doesn't drift/rubber-band
+	// behind it. Desktop's floating card never triggers this.
+	useEffect(() => {
+		if (typeof window === "undefined" || !window.matchMedia) return;
+		const isMobile = window.matchMedia(MOBILE_QUERY).matches;
+		if (!isMobile) return;
+		document.body.style.overflow = panelVisible ? "hidden" : "";
+		return () => {
+			document.body.style.overflow = "";
+		};
+	}, [panelVisible]);
 
 	// Smart auto-scroll: only snap to the newest message when the visitor is
 	// already near the bottom (i.e. actively reading live). If they've
@@ -525,12 +539,22 @@ export default function ChatWidget() {
 		<div className="chatwidget-root">
 			{panelVisible && (
 				<div
+					className={`chatwidget-backdrop${closing ? " chatwidget-backdrop--closing" : ""}`}
+					onClick={closePanel}
+					aria-hidden="true"
+				/>
+			)}
+
+			{panelVisible && (
+				<div
 					className={`chatwidget-panel${live ? " chatwidget-panel--live" : ""}${
 						closing ? " chatwidget-panel--closing" : ""
 					}`}
 					role="dialog"
 					aria-label={live ? "Fruitbean live support" : "Fruitbean chat assistant"}
 				>
+					<span className="chatwidget-grabber" aria-hidden="true"></span>
+
 					<div className="chatwidget-header">
 						<div className="chatwidget-header-info">
 							{live ? (
@@ -713,6 +737,7 @@ export default function ChatWidget() {
 				aria-label={open ? "Close chat" : "Open chat"}
 				aria-expanded={open}
 			>
+				<span className="chatwidget-toggle-ring" aria-hidden="true"></span>
 				<span className="chatwidget-toggle-iconwrap">
 					<span className="chatwidget-toggle-icon chatwidget-toggle-icon--chat" aria-hidden="true">
 						{live ? (

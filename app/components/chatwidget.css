@@ -1,16 +1,23 @@
 /* ════════════════════════════════════════════════════════════════════════
-   Fruitbean chat widget — "ink drop" redesign
+   Fruitbean chat widget — "ink drop" redesign v2
    ────────────────────────────────────────────────────────────────────────
-   Signature idea: the droplet that already stood for the brand becomes the
-   through-line for motion, too — the toggle button breathes like a drop of
-   ink about to fall, the panel pops open with a little overshoot, and the
-   send button releases a small ink-ring on every message.
+   Same brand language as before (droplet motif, green→cyan AI mode,
+   magenta Live mode), rebuilt for two problems:
 
-   Two visual modes, switched by adding/removing `chatwidget-panel--live`
-   (and the matching `chatwidget-toggle--live`) on the relevant elements:
-     · AI mode   — deep-space navy header, green→cyan droplet brand
-     · Live mode — magenta "Live Support" header, once a human takes over.
-       Same window, same thread, unmistakably different identity.
+   1. VISIBILITY AT REST — the toggle button used to just sit there with a
+      flat shadow and no cue that it's interactive. It now has a soft
+      breathing glow ring, a real gradient, and a subtle first-load bounce,
+      so it reads as "a live thing you can tap" instead of a stray icon.
+
+   2. THE POP — opening used to feel abrupt / inconsistent. It's now a
+      proper spring pop-in anchored to the button's corner, with a matching
+      shrink-away on close (never an instant vanish).
+
+   3. MOBILE — the floating card is gone on phones. It's replaced with a
+      true bottom sheet: slides up from the edge, capped height so it never
+      swallows the whole screen, rounded top with a grabber handle, and a
+      dimmed backdrop you can tap to dismiss — closer to how a native app
+      chat sheet behaves.
    ════════════════════════════════════════════════════════════════════════ */
 
 .chatwidget-root {
@@ -81,55 +88,95 @@
 .chatwidget-liveavatar--xs { width: 22px; height: 22px; font-size: 9.5px; margin-top: 2px; }
 
 /* ═══════════════════════════════════════════════════════════════════════
+   Backdrop — invisible + inert on desktop, a real dimmed scrim on mobile
+   (see responsive section) that closes the sheet on tap-outside.
+   ═══════════════════════════════════════════════════════════════════════ */
+.chatwidget-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 9997;
+  background: transparent;
+  pointer-events: none;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════
    Toggle (FAB) button
    ═══════════════════════════════════════════════════════════════════════ */
 .chatwidget-toggle {
-  width: 60px;
-  height: 60px;
+  position: relative;
+  width: 62px;
+  height: 62px;
   border-radius: 50%;
   border: none;
-  background: linear-gradient(155deg, #12122a 0%, #1a1a2e 100%);
+  background: linear-gradient(155deg, #171733 0%, #232350 100%);
   display: flex;
   align-items: center;
   justify-content: center;
   cursor: pointer;
   box-shadow:
-    0 8px 26px rgba(10, 10, 30, 0.35),
-    0 0 0 1px rgba(255, 255, 255, 0.06) inset;
+    0 10px 28px rgba(10, 10, 30, 0.4),
+    0 0 0 1px rgba(255, 255, 255, 0.08) inset;
   transition: transform 0.25s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.3s ease, background 0.35s ease;
-  position: relative;
+  animation: cwToggleEntrance 0.55s cubic-bezier(0.34, 1.56, 0.64, 1) both;
 }
 .chatwidget-toggle--live {
   background: linear-gradient(140deg, #5b0f38 0%, #e0338a 100%);
 }
-.chatwidget-toggle:hover {
-  transform: translateY(-3px) scale(1.05);
-  box-shadow:
-    0 12px 30px rgba(10, 10, 30, 0.38),
-    0 0 22px var(--cw-accent-glow);
+@keyframes cwToggleEntrance {
+  from { opacity: 0; transform: translateY(24px) scale(0.6); }
+  to   { opacity: 1; transform: translateY(0) scale(1); }
 }
-.chatwidget-toggle:active { transform: translateY(-1px) scale(0.97); }
+
+/* Idle "breathing" glow ring — always present at rest (much softer than
+   the nudge ring below) so the button visibly reads as alive/interactive
+   rather than a static icon sitting in the corner. */
+.chatwidget-toggle-ring {
+  position: absolute;
+  inset: -6px;
+  border-radius: 50%;
+  background: radial-gradient(circle, var(--cw-accent-glow) 0%, transparent 70%);
+  opacity: 0.55;
+  animation: cwIdleBreathe 3.2s ease-in-out infinite;
+  pointer-events: none;
+  z-index: -1;
+}
+@keyframes cwIdleBreathe {
+  0%, 100% { transform: scale(0.92); opacity: 0.35; }
+  50%      { transform: scale(1.14); opacity: 0.65; }
+}
+
+.chatwidget-toggle:hover {
+  transform: translateY(-3px) scale(1.06);
+  box-shadow:
+    0 14px 34px rgba(10, 10, 30, 0.42),
+    0 0 26px var(--cw-accent-glow);
+}
+.chatwidget-toggle:active { transform: translateY(-1px) scale(0.95); }
 .chatwidget-toggle:focus-visible {
   outline: 2px solid var(--cw-accent2);
   outline-offset: 3px;
 }
 
+/* Once open, the idle glow would compete with the panel — quiet it down. */
+.chatwidget-toggle--open .chatwidget-toggle-ring { animation: none; opacity: 0.25; }
+
 /* Gentle "someone's waiting to help" ring pulse — shown only for a genuine
-   invite (first-ever visit) or a real unread message, never constantly. */
+   invite (first-ever visit) or a real unread message, layered on top of
+   the idle breathe so it's clearly a step up in urgency. */
 .chatwidget-toggle--nudge::before {
   content: '';
   position: absolute;
-  inset: -7px;
+  inset: -9px;
   border-radius: 50%;
   border: 2px solid var(--cw-accent2);
-  opacity: 0.65;
-  animation: cwRingPulse 2.2s ease-out infinite;
+  opacity: 0.7;
+  animation: cwRingPulse 2s ease-out infinite;
   pointer-events: none;
 }
 @keyframes cwRingPulse {
-  0% { transform: scale(0.88); opacity: 0.55; }
-  75% { transform: scale(1.32); opacity: 0; }
-  100% { transform: scale(1.32); opacity: 0; }
+  0% { transform: scale(0.88); opacity: 0.6; }
+  75% { transform: scale(1.38); opacity: 0; }
+  100% { transform: scale(1.38); opacity: 0; }
 }
 
 /* Icon cross-fade: droplet/avatar ↔ close (×), driven purely by CSS off the
@@ -204,38 +251,46 @@
 }
 
 /* ═══════════════════════════════════════════════════════════════════════
-   Chat panel
+   Chat panel (desktop: floating card / mobile: bottom sheet — see below)
    ═══════════════════════════════════════════════════════════════════════ */
 .chatwidget-panel {
   position: absolute;
-  bottom: 76px;
+  bottom: 78px;
   right: 0;
-  width: 372px;
+  width: 376px;
   max-width: calc(100vw - 48px);
-  height: 552px;
+  height: 560px;
   max-height: calc(100vh - 140px);
   background: #fff;
   border-radius: 22px;
   box-shadow:
-    0 24px 60px rgba(10, 10, 30, 0.22),
+    0 26px 64px rgba(10, 10, 30, 0.24),
     0 6px 18px rgba(10, 10, 30, 0.1),
     0 0 0 1px rgba(10, 10, 30, 0.04);
   display: flex;
   flex-direction: column;
   overflow: hidden;
   transform-origin: bottom right;
-  animation: cwPanelIn 0.32s cubic-bezier(0.34, 1.56, 0.64, 1);
+  z-index: 9999;
+  animation: cwPanelIn 0.36s cubic-bezier(0.2, 1.1, 0.4, 1) both;
 }
 .chatwidget-panel--closing {
-  animation: cwPanelOut 0.19s ease forwards;
+  animation: cwPanelOut 0.2s cubic-bezier(0.4, 0, 1, 1) forwards;
 }
 @keyframes cwPanelIn {
-  from { opacity: 0; transform: translateY(18px) scale(0.93); }
-  to { opacity: 1; transform: translateY(0) scale(1); }
+  from { opacity: 0; transform: translateY(22px) scale(0.85); }
+  60%  { opacity: 1; }
+  to   { opacity: 1; transform: translateY(0) scale(1); }
 }
 @keyframes cwPanelOut {
   from { opacity: 1; transform: translateY(0) scale(1); }
-  to { opacity: 0; transform: translateY(10px) scale(0.96); }
+  to { opacity: 0; transform: translateY(14px) scale(0.9); }
+}
+
+/* Drag-handle grabber — purely decorative on desktop (hidden), becomes the
+   sheet's visual affordance on mobile. */
+.chatwidget-grabber {
+  display: none;
 }
 
 /* ─── Header ─── */
@@ -392,6 +447,7 @@
   flex-direction: column;
   gap: 13px;
   scroll-behavior: smooth;
+  -webkit-overflow-scrolling: touch;
 }
 .chatwidget-messages::-webkit-scrollbar { width: 6px; }
 .chatwidget-messages::-webkit-scrollbar-track { background: transparent; }
@@ -579,6 +635,7 @@
   align-items: flex-end;
   gap: 8px;
   padding: 12px;
+  padding-bottom: max(12px, env(safe-area-inset-bottom));
   border-top: 1.5px solid #eef0f3;
   background: #fff;
   flex-shrink: 0;
@@ -646,14 +703,94 @@
   to { transform: scale(2.1); opacity: 0; }
 }
 
-/* ─── Responsive ─── */
-@media (max-width: 480px) {
-  .chatwidget-root { bottom: 16px; right: 16px; }
+/* ═══════════════════════════════════════════════════════════════════════
+   MOBILE — bottom sheet
+   ────────────────────────────────────────────────────────────────────────
+   Below 600px the "floating card in the corner" pattern stops working —
+   there isn't enough room to float it, so it used to end up nearly
+   fullscreen anyway but positioned like a corner popup, which read as
+   awkward/misplaced. Instead: anchor it to the bottom edge as a proper
+   sheet, cap its height so content is never obscured, add a scrim behind
+   it, and give it a grabber handle so it visually reads as "pulled up"
+   rather than randomly appearing.
+   ═══════════════════════════════════════════════════════════════════════ */
+@media (max-width: 600px) {
+  .chatwidget-root {
+    bottom: 16px;
+    right: 16px;
+  }
+
+  .chatwidget-toggle {
+    width: 56px;
+    height: 56px;
+  }
+
+  /* Scrim behind the sheet — tap it to dismiss, like any native sheet. */
+  .chatwidget-backdrop {
+    background: rgba(10, 10, 26, 0.4);
+    -webkit-backdrop-filter: blur(1.5px);
+    backdrop-filter: blur(1.5px);
+    pointer-events: auto;
+    opacity: 1;
+    animation: cwBackdropIn 0.22s ease both;
+  }
+  .chatwidget-backdrop--closing {
+    animation: cwBackdropOut 0.2s ease forwards;
+  }
+  @keyframes cwBackdropIn { from { opacity: 0; } to { opacity: 1; } }
+  @keyframes cwBackdropOut { from { opacity: 1; } to { opacity: 0; } }
+
   .chatwidget-panel {
-    width: calc(100vw - 24px);
-    height: calc(100vh - 116px);
-    right: -8px;
-    border-radius: 20px;
+    position: fixed;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    top: auto;
+    width: 100%;
+    max-width: 100%;
+    height: min(78vh, 640px);
+    max-height: 82vh;
+    border-radius: 22px 22px 0 0;
+    transform-origin: bottom center;
+    padding-top: 6px;
+    animation: cwSheetIn 0.32s cubic-bezier(0.2, 0.9, 0.32, 1) both;
+  }
+  .chatwidget-panel--closing {
+    animation: cwSheetOut 0.22s cubic-bezier(0.4, 0, 1, 1) forwards;
+  }
+  @keyframes cwSheetIn {
+    from { opacity: 0; transform: translateY(100%); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+  @keyframes cwSheetOut {
+    from { opacity: 1; transform: translateY(0); }
+    to   { opacity: 0; transform: translateY(100%); }
+  }
+
+  .chatwidget-grabber {
+    display: block;
+    width: 36px;
+    height: 4px;
+    border-radius: 99px;
+    background: #e2e4ea;
+    margin: 0 auto 4px;
+    flex-shrink: 0;
+  }
+  .chatwidget-panel--live .chatwidget-grabber { background: rgba(255, 255, 255, 0.5); }
+
+  .chatwidget-header {
+    padding-top: 10px;
+  }
+
+  .chatwidget-inputbar {
+    padding-bottom: max(14px, env(safe-area-inset-bottom));
+  }
+
+  /* First-message nudge tooltip would collide with the edge on tiny
+     screens — the pulse ring on the toggle itself is enough of a cue. */
+  .chatwidget-scrolldown {
+    right: 12px;
+    bottom: 12px;
   }
 }
 
@@ -665,11 +802,15 @@
   .chatwidget-system-row,
   .chatwidget-banner,
   .chatwidget-toggle-badge,
-  .chatwidget-scrolldown {
-    animation: none;
+  .chatwidget-scrolldown,
+  .chatwidget-toggle,
+  .chatwidget-backdrop,
+  .chatwidget-backdrop--closing {
+    animation: none !important;
   }
   .chatwidget-typing span,
   .chatwidget-toggle-livedot,
+  .chatwidget-toggle-ring,
   .chatwidget-live-chip::before,
   .chatwidget-reconnect-icon,
   .chatwidget-toggle--nudge::before,

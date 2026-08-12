@@ -1515,11 +1515,15 @@ section { padding: 70px 60px; }
   }
 
   /* Why section reveal — snap into place, no slide */
-  .why-item,
+  .why-item {
+    transition: opacity 0s, translate 0s !important;
+  }
   .why-item-icon,
   .why-item-accent {
     transition: none !important;
   }
+
+
 
   /* Ink bars: intentionally keep their fill/deplete transition.
      These are data visuals, not decoration — still meaningful without motion. */

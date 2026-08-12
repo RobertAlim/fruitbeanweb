@@ -982,11 +982,27 @@ section { padding: 70px 60px; }
   box-shadow:
     3px 3px 0 rgba(10,10,30,0.035);
 
+  /* Scroll reveal — starts hidden */
+  opacity: 0;
+  translate: 0 22px;
+
+  /* translate + opacity handle the reveal (slow).
+     transform handles hover lift (fast).
+     Separate properties so they never conflict. */
   transition:
-    transform 0.22s cubic-bezier(0.34,1.56,0.64,1),
-    box-shadow 0.22s ease,
+    opacity      0.65s cubic-bezier(0.22,1,0.36,1),
+    translate    0.65s cubic-bezier(0.22,1,0.36,1),
+    transform    0.22s cubic-bezier(0.34,1.56,0.64,1),
+    box-shadow   0.22s ease,
     border-color 0.22s ease,
-    background 0.22s ease;
+    background   0.22s ease;
+}
+
+/* JS: observer.add('.visible') on enter, remove on exit for re-reveal on scroll back */
+.why-item.visible {
+  opacity: 1;
+  translate: 0 0;
+  transition-delay: 0s; /* reset stagger so hover is instant after reveal */
 }
 
 .why-item:hover {
@@ -1357,7 +1373,8 @@ section { padding: 70px 60px; }
 }
 
 
-/* Inner ink */
+/* Inner ink — transition-based so it fills AND depletes smoothly.
+   JS: add .animate when ink panel enters viewport, remove when it exits. */
 .ink-bar-inner {
   position: relative;
 
@@ -1369,20 +1386,15 @@ section { padding: 70px 60px; }
   transform: scaleY(0);
   transform-origin: bottom center;
 
-  animation-name: inkBarFill;
-  animation-duration: 2s;
-  animation-timing-function: cubic-bezier(0.22, 1, 0.36, 1);
-  animation-delay: 0s;
-  animation-iteration-count: 1;
-  animation-direction: normal;
-  animation-fill-mode: forwards;
-  /* Starts paused — JS must add .animate to .ink-bar-inner (or a parent)
-     when the Why section enters the viewport via IntersectionObserver */
-  animation-play-state: paused;
+  transition: transform 1.8s cubic-bezier(0.22, 1, 0.36, 1);
 
   will-change: transform;
 
   overflow: hidden;
+}
+
+.ink-bar-inner.animate {
+  transform: scaleY(1);
 }
 
 
@@ -1426,23 +1438,6 @@ section { padding: 70px 60px; }
   pointer-events: none;
 }
 
-
-/* Animation */
-@keyframes inkBarFill {
-  0% {
-    transform: scaleY(0);
-  }
-
-  100% {
-    transform: scaleY(1);
-  }
-}
-
-/* JS: inkBarEl.classList.add('animate') inside your IntersectionObserver
-   callback when the Why section (or ink panel) enters the viewport. */
-.ink-bar-inner.animate {
-  animation-play-state: running;
-}
 
 .ink-bar-label {
   margin-top: 9px;
@@ -1497,38 +1492,13 @@ section { padding: 70px 60px; }
 
 
 /* ─────────────────────────────────────────
-   REVEAL
+   REVEAL — stagger delays (only active before .visible resets them)
 ───────────────────────────────────────── */
 
-.why-section .reveal {
-  opacity: 0;
-  transform: translateY(22px);
-
-  transition:
-    opacity 0.65s cubic-bezier(0.22,1,0.36,1),
-    transform 0.65s cubic-bezier(0.22,1,0.36,1);
-}
-
-.why-section .reveal.visible {
-  opacity: 1;
-  transform: none;
-}
-
-.why-grid .why-item:nth-child(1) {
-  transition-delay: 0.05s;
-}
-
-.why-grid .why-item:nth-child(2) {
-  transition-delay: 0.12s;
-}
-
-.why-grid .why-item:nth-child(3) {
-  transition-delay: 0.19s;
-}
-
-.why-grid .why-item:nth-child(4) {
-  transition-delay: 0.26s;
-}
+.why-grid .why-item:nth-child(1) { transition-delay: 0.05s; }
+.why-grid .why-item:nth-child(2) { transition-delay: 0.12s; }
+.why-grid .why-item:nth-child(3) { transition-delay: 0.19s; }
+.why-grid .why-item:nth-child(4) { transition-delay: 0.26s; }
 
 
 /* ─────────────────────────────────────────
@@ -1542,27 +1512,17 @@ section { padding: 70px 60px; }
     animation: none !important;
   }
 
-  /* Kill transitions on reveal elements (they snap into place instead) */
-  .reveal,
-  .why-section .reveal,
+  /* Why section reveal — snap into place, no slide */
   .why-item,
   .why-item-icon,
   .why-item-accent {
     transition: none !important;
   }
 
-  /* Ink bars: intentionally keep the fill animation running.
-     Override paused default — these are data visuals, not decoration. */
-  .ink-bar-inner,
-  .ink-bar-inner.animate {
-    animation-name: inkBarFill !important;
-    animation-duration: 2s !important;
-    animation-timing-function: cubic-bezier(0.22, 1, 0.36, 1) !important;
-    animation-delay: 0s !important;
-    animation-iteration-count: 1 !important;
-    animation-direction: normal !important;
-    animation-fill-mode: forwards !important;
-    animation-play-state: running !important;
+  /* Ink bars: intentionally keep their fill/deplete transition.
+     These are data visuals, not decoration — still meaningful without motion. */
+  .ink-bar-inner {
+    transition: transform 1.8s cubic-bezier(0.22, 1, 0.36, 1) !important;
   }
 }
 

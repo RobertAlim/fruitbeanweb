@@ -1390,6 +1390,8 @@ section { padding: 70px 60px; }
 
   transition: transform 1.8s cubic-bezier(0.22, 1, 0.36, 1);
 
+  will-change: transform;
+
   overflow: hidden;
 }
 
@@ -1505,31 +1507,6 @@ section { padding: 70px 60px; }
    REDUCED MOTION
    CMYK BARS INTENTIONALLY STILL ANIMATE
 ───────────────────────────────────────── */
-
-@media (prefers-reduced-motion: reduce) {
-  /* Kill eye-candy animations globally */
-  .blob, .slide-content, .ink-drop {
-    animation: none !important;
-  }
-
-  /* Why section reveal — snap into place, no slide */
-  .why-item {
-    transition: opacity 0s, translate 0s !important;
-  }
-  .why-item-icon,
-  .why-item-accent {
-    transition: none !important;
-  }
-
-
-
-  /* Ink bars: intentionally keep their fill/deplete transition.
-     These are data visuals, not decoration — still meaningful without motion. */
-  .ink-bar-inner {
-    transition: transform 1.8s cubic-bezier(0.22, 1, 0.36, 1) !important;
-  }
-}
-
 
 /* ─────────────────────────────────────────
    MOBILE
@@ -1752,7 +1729,11 @@ section { padding: 70px 60px; }
     transform: none !important;
   }
 
-  /* Arrows hidden on mobile — swipe is primary. */
+  /* Mobile perf — simplified blobs (no mix-blend-mode on low-end
+     hardware), halftone reduced, arrows hidden (swipe is primary). */
+  .blob { mix-blend-mode: normal; opacity: 0.28; animation-duration: 14s; }
+  .slide::after { display: none; }
+  body::before { background-size: 18px 18px; opacity: 0.02; }
   .slider-arrows { display: none; }
   .slider-dots { bottom: 16px; gap: 10px; }
   .dot { width: 10px; height: 10px; } /* bigger tap target */

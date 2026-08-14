@@ -12,6 +12,8 @@ const TYPING_ID = "__typing__";
 const CLOSE_ANIM_MS = 220; // keep in sync with .chatwidget-panel--closing duration in chatwidget.css
 const NEAR_BOTTOM_PX = 64;
 const MOBILE_QUERY = "(max-width: 600px)";
+const POSITION_KEY = "fruitbean_chat_position"; // remembers where the visitor dragged the widget to (desktop only)
+const DRAG_THRESHOLD_PX = 6; // movement past this turns a press into a drag instead of a click
 
 const WELCOME_MESSAGE = {
 	id: "__welcome__",
@@ -140,6 +142,12 @@ export default function ChatWidget() {
 	const [hasOpenedBefore, setHasOpenedBefore] = useState(true); // assume true until checked, to avoid a flash of the nudge badge
 	const [isNearBottom, setIsNearBottom] = useState(true);
 	const [newMessageWaiting, setNewMessageWaiting] = useState(false);
+	// Desktop-only: lets the visitor drag the whole widget to a spot on
+	// screen that doesn't cover what they're trying to read. null = default
+	// bottom-right corner (driven by CSS). Mobile never sets this — the
+	// bottom-sheet layout stays exactly as it was.
+	const [dragPos, setDragPos] = useState(null);
+	const [isDragging, setIsDragging] = useState(false);
 
 	const sessionIdRef = useRef(null);
 	const lastMessageIdRef = useRef(0);
@@ -159,6 +167,8 @@ export default function ChatWidget() {
 
 	const scrollRef = useRef(null);
 	const textareaRef = useRef(null);
+	const rootRef = useRef(null);
+	const dragStateRef = useRef({ dragging: false, moved: false, startX: 0, startY: 0, originX: 0, originY: 0 });
 
 	const live = isLiveStatus(status);
 	const panelVisible = open || closing;
@@ -189,6 +199,136 @@ export default function ChatWidget() {
 			document.body.style.overflow = "";
 		};
 	}, [panelVisible]);
+
+	function isDesktopViewport() {
+		if (typeof window === "undefined" || !window.matchMedia) return true;
+		return !window.matchMedia(MOBILE_QUERY).matches;
+	}
+
+	// Keeps a dragged widget fully on screen. The root element's own
+	// rendered size hugs the toggle button (the backdrop/panel are taken
+	// out of flow), so that alone is enough when the panel is closed. When
+	// it's open, the panel hangs up-and-left of the toggle, so its actual
+	// measured footprint also has to stay on screen.
+	function clampToViewport(x, y) {
+		if (typeof window === "undefined") return { x, y };
+		const margin = 8;
+		const rootEl = rootRef.current;
+		const w = rootEl?.offsetWidth || 50;
+		const h = rootEl?.offsetHeight || 50;
+		let minX = margin;
+		let minY = margin;
+		const maxX = Math.max(margin, window.innerWidth - margin - w);
+		const maxY = Math.max(margin, window.innerHeight - margin - h);
+
+		const panelEl = rootEl?.querySelector(".chatwidget-panel");
+		if (panelEl) {
+			const pw = panelEl.offsetWidth;
+			const ph = panelEl.offsetHeight;
+			const gap = 16; // approx panel-to-toggle gap baked into the CSS "bottom" offset
+			minX = Math.max(minX, margin - w + pw);
+			minY = Math.max(minY, margin + gap + ph - h);
+		}
+
+		return {
+			x: Math.min(Math.max(x, minX), Math.max(minX, maxX)),
+			y: Math.min(Math.max(y, minY), Math.max(minY, maxY)),
+		};
+	}
+
+	// Restore a remembered position on desktop only; phones always keep the
+	// default bottom sheet, so we never even read the saved value there.
+	useEffect(() => {
+		if (!isDesktopViewport()) return;
+		try {
+			const saved = JSON.parse(localStorage.getItem(POSITION_KEY) || "null");
+			if (typeof saved?.x === "number" && typeof saved?.y === "number") {
+				setDragPos(clampToViewport(saved.x, saved.y));
+			}
+		} catch {}
+		// eslint-disable-next-line react-hooks/exhaustive-deps
+	}, []);
+
+	// If the viewport crosses into mobile width, drop back to the default
+	// bottom-sheet position rather than leaving it stranded wherever it was
+	// dragged to on a wider screen. Re-clamp on desktop resizes too.
+	useEffect(() => {
+		function handleResize() {
+			if (!isDesktopViewport()) {
+				setDragPos(null);
+			} else {
+				setDragPos((pos) => (pos ? clampToViewport(pos.x, pos.y) : pos));
+			}
+		}
+		window.addEventListener("resize", handleResize);
+		return () => window.removeEventListener("resize", handleResize);
+		// eslint-disable-next-line react-hooks/exhaustive-deps
+	}, []);
+
+	function beginDrag(clientX, clientY) {
+		if (!isDesktopViewport()) return;
+		const rootEl = rootRef.current;
+		if (!rootEl) return;
+		const rect = rootEl.getBoundingClientRect();
+		dragStateRef.current = {
+			dragging: true,
+			moved: false,
+			startX: clientX,
+			startY: clientY,
+			originX: rect.left,
+			originY: rect.top,
+		};
+		window.addEventListener("pointermove", handleDragMove);
+		window.addEventListener("pointerup", handleDragEnd);
+	}
+
+	function handleDragMove(e) {
+		const ds = dragStateRef.current;
+		if (!ds.dragging) return;
+		const dx = e.clientX - ds.startX;
+		const dy = e.clientY - ds.startY;
+		if (!ds.moved && Math.hypot(dx, dy) > DRAG_THRESHOLD_PX) {
+			ds.moved = true;
+			setIsDragging(true);
+		}
+		if (ds.moved) {
+			setDragPos(clampToViewport(ds.originX + dx, ds.originY + dy));
+		}
+	}
+
+	function handleDragEnd() {
+		window.removeEventListener("pointermove", handleDragMove);
+		window.removeEventListener("pointerup", handleDragEnd);
+		const ds = dragStateRef.current;
+		ds.dragging = false;
+		setIsDragging(false);
+		if (ds.moved) {
+			setDragPos((pos) => {
+				if (pos) {
+					try {
+						localStorage.setItem(POSITION_KEY, JSON.stringify(pos));
+					} catch {}
+				}
+				return pos;
+			});
+		}
+	}
+
+	// Drag handle #1: the toggle button itself (widget closed or open — it's
+	// always on screen). A plain click still opens/closes normally; only a
+	// press that actually moves counts as a drag.
+	function handleFabPointerDown(e) {
+		if (e.button !== undefined && e.button !== 0) return;
+		beginDrag(e.clientX, e.clientY);
+	}
+
+	// Drag handle #2: the panel header, so the open panel can be repositioned
+	// too — but not when the press starts on the close button.
+	function handleHeaderPointerDown(e) {
+		if (e.button !== undefined && e.button !== 0) return;
+		if (e.target.closest && e.target.closest("button")) return;
+		beginDrag(e.clientX, e.clientY);
+	}
 
 	// Smart auto-scroll: only snap to the newest message when the visitor is
 	// already near the bottom (i.e. actively reading live). If they've
@@ -536,7 +676,11 @@ export default function ChatWidget() {
 	const showNudge = !open && !live && (unreadCount > 0 || !hasOpenedBefore);
 
 	return (
-		<div className="chatwidget-root">
+		<div
+			className={`chatwidget-root${isDragging ? " chatwidget-root--dragging" : ""}`}
+			ref={rootRef}
+			style={dragPos ? { left: dragPos.x, top: dragPos.y, right: "auto", bottom: "auto" } : undefined}
+		>
 			{panelVisible && (
 				<div
 					className={`chatwidget-backdrop${closing ? " chatwidget-backdrop--closing" : ""}`}
@@ -555,7 +699,7 @@ export default function ChatWidget() {
 				>
 					<span className="chatwidget-grabber" aria-hidden="true"></span>
 
-					<div className="chatwidget-header">
+					<div className="chatwidget-header" onPointerDown={handleHeaderPointerDown}>
 						<div className="chatwidget-header-info">
 							{live ? (
 								<span
@@ -733,7 +877,16 @@ export default function ChatWidget() {
 				className={`chatwidget-toggle${live ? " chatwidget-toggle--live" : ""}${
 					open ? " chatwidget-toggle--open" : ""
 				}${showNudge ? " chatwidget-toggle--nudge" : ""}`}
-				onClick={() => (open ? closePanel() : openPanel())}
+				onPointerDown={handleFabPointerDown}
+				onClick={() => {
+					// A drag that actually moved the widget shouldn't also fire a
+					// click-to-toggle once the pointer lifts.
+					if (dragStateRef.current.moved) {
+						dragStateRef.current.moved = false;
+						return;
+					}
+					open ? closePanel() : openPanel();
+				}}
 				aria-label={open ? "Close chat" : "Open chat"}
 				aria-expanded={open}
 			>
@@ -749,7 +902,7 @@ export default function ChatWidget() {
 						)}
 					</span>
 					<span className="chatwidget-toggle-icon chatwidget-toggle-icon--close" aria-hidden="true">
-						<IconClose width="18" height="18" />
+						<IconClose width="15" height="15" />
 					</span>
 				</span>
 

@@ -68,7 +68,7 @@
   flex-shrink: 0;
   box-shadow: 0 0 0 rgba(0, 0, 0, 0);
 }
-.chatwidget-droplet--lg { width: 25px; height: 25px; }
+.chatwidget-droplet--lg { width: 20px; height: 20px; }
 .chatwidget-droplet--sm { width: 16px; height: 16px; }
 .chatwidget-droplet--xs { width: 12px; height: 12px; margin-top: 8px; }
 
@@ -104,8 +104,8 @@
    ═══════════════════════════════════════════════════════════════════════ */
 .chatwidget-toggle {
   position: relative;
-  width: 62px;
-  height: 62px;
+  width: 50px;
+  height: 50px;
   border-radius: 50%;
   border: none;
   background: linear-gradient(155deg, #171733 0%, #232350 100%);
@@ -132,18 +132,15 @@
    rather than a static icon sitting in the corner. */
 .chatwidget-toggle-ring {
   position: absolute;
-  inset: -6px;
+  inset: -5px;
   border-radius: 50%;
   background: radial-gradient(circle, var(--cw-accent-glow) 0%, transparent 70%);
-  opacity: 0.55;
-  animation: cwIdleBreathe 3.2s ease-in-out infinite;
+  opacity: 0.4;
   pointer-events: none;
   z-index: -1;
+  transition: opacity 0.3s ease;
 }
-@keyframes cwIdleBreathe {
-  0%, 100% { transform: scale(0.92); opacity: 0.35; }
-  50%      { transform: scale(1.14); opacity: 0.65; }
-}
+.chatwidget-toggle:hover .chatwidget-toggle-ring { opacity: 0.65; }
 
 .chatwidget-toggle:hover {
   transform: translateY(-3px) scale(1.06);
@@ -158,19 +155,20 @@
 }
 
 /* Once open, the idle glow would compete with the panel — quiet it down. */
-.chatwidget-toggle--open .chatwidget-toggle-ring { animation: none; opacity: 0.25; }
+.chatwidget-toggle--open .chatwidget-toggle-ring { opacity: 0.2; }
 
 /* Gentle "someone's waiting to help" ring pulse — shown only for a genuine
-   invite (first-ever visit) or a real unread message, layered on top of
-   the idle breathe so it's clearly a step up in urgency. */
+   invite (first-ever visit) or a real unread message. Pulses a few times to
+   catch the eye, then settles instead of pulsing forever, which reads as
+   nagging on a page the visitor is trying to read. */
 .chatwidget-toggle--nudge::before {
   content: '';
   position: absolute;
   inset: -9px;
   border-radius: 50%;
   border: 2px solid var(--cw-accent2);
-  opacity: 0.7;
-  animation: cwRingPulse 2s ease-out infinite;
+  opacity: 0;
+  animation: cwRingPulse 2s ease-out 3;
   pointer-events: none;
 }
 @keyframes cwRingPulse {
@@ -183,8 +181,8 @@
    --open state class, so there's no flash of missing content mid-toggle. */
 .chatwidget-toggle-iconwrap {
   position: relative;
-  width: 28px;
-  height: 28px;
+  width: 22px;
+  height: 22px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -213,20 +211,20 @@
 
 .chatwidget-toggle-badge {
   position: absolute;
-  top: -3px;
-  right: -3px;
+  top: -2px;
+  right: -2px;
   background: linear-gradient(135deg, #ff6f91, #e0338a);
   color: #fff;
-  font-size: 11px;
+  font-size: 10px;
   font-weight: 800;
-  min-width: 19px;
-  height: 19px;
+  min-width: 17px;
+  height: 17px;
   padding: 0 4px;
   border-radius: 999px;
   display: flex;
   align-items: center;
   justify-content: center;
-  border: 2.5px solid #fff;
+  border: 2px solid #fff;
   box-shadow: 0 2px 8px rgba(224, 51, 138, 0.5);
   animation: cwPopIn 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
 }
@@ -234,11 +232,11 @@
   position: absolute;
   top: -1px;
   right: -1px;
-  width: 15px;
-  height: 15px;
+  width: 13px;
+  height: 13px;
   border-radius: 50%;
   background: #22c55e;
-  border: 2.5px solid #fff;
+  border: 2px solid #fff;
   animation: cwPulseDot 1.8s infinite;
 }
 @keyframes cwPulseDot {
@@ -255,7 +253,7 @@
    ═══════════════════════════════════════════════════════════════════════ */
 .chatwidget-panel {
   position: absolute;
-  bottom: 78px;
+  bottom: 66px;
   right: 0;
   width: 376px;
   max-width: calc(100vw - 48px);
@@ -318,12 +316,7 @@
   background: radial-gradient(circle, var(--cw-accent2) 0%, transparent 72%);
   opacity: 0.3;
   filter: blur(6px);
-  animation: cwHeaderDrift 7s ease-in-out infinite alternate;
   pointer-events: none;
-}
-@keyframes cwHeaderDrift {
-  from { transform: translate(0, 0) scale(1); }
-  to { transform: translate(-14px, 12px) scale(1.18); }
 }
 .chatwidget-header-info {
   position: relative;
@@ -701,6 +694,29 @@
 @keyframes cwSendPulse {
   from { transform: scale(0.6); opacity: 0.6; }
   to { transform: scale(2.1); opacity: 0; }
+}
+
+/* ═══════════════════════════════════════════════════════════════════════
+   Draggable positioning (desktop/tablet only — the phone bottom sheet
+   below is untouched and never becomes draggable).
+   ═══════════════════════════════════════════════════════════════════════ */
+@media (min-width: 601px) {
+  .chatwidget-toggle { cursor: grab; touch-action: none; }
+  .chatwidget-header { cursor: grab; touch-action: none; }
+  .chatwidget-close { cursor: pointer; }
+}
+.chatwidget-root--dragging,
+.chatwidget-root--dragging .chatwidget-toggle,
+.chatwidget-root--dragging .chatwidget-header {
+  cursor: grabbing;
+}
+.chatwidget-root--dragging * {
+  user-select: none;
+}
+/* Being dragged mid-motion shouldn't also play the hover lift/scale. */
+.chatwidget-root--dragging .chatwidget-toggle {
+  transition: none;
+  transform: none;
 }
 
 /* ═══════════════════════════════════════════════════════════════════════

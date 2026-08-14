@@ -1508,7 +1508,7 @@ section { padding: 70px 60px; }
 
 @media (prefers-reduced-motion: reduce) {
   /* Kill eye-candy animations globally */
-  .blob, .slide-content, .inkDrip {
+  .blob, .slide-content, .ink-drop {
     animation: none !important;
   }
 

@@ -220,8 +220,7 @@ nav {
 /* ─── HERO SLIDER ─── */
 .hero {
   position: relative;
-  height: 100vh;
-  height: 100dvh;      /* handles mobile browser chrome better than vh */
+  height: 90vh;
   min-height: 100vh;
   overflow: hidden;
 }

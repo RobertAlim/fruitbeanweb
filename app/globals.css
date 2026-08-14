@@ -244,6 +244,16 @@ nav {
 .slide-4 { background: radial-gradient(ellipse at 40% 50%, #041624 0%, #020810 60%); }
 .slide-5 { background: radial-gradient(ellipse at 65% 55%, #221800 0%, #0c0900 60%); }
 
+.slide-1 .slide-content,
+.slide-2 .slide-content {
+  margin-left: clamp(20px, 4vw, 64px);
+}
+
+.slide-1 .slide-content,
+.slide-2 .slide-content {
+  margin-left: 12px;
+}
+
 /* Halftone dot overlay — static print-shop grain, replaces scanlines */
 .slide::after {
   content: '';

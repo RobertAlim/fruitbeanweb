@@ -246,7 +246,7 @@ nav {
 
 .slide-1 .slide-content,
 .slide-2 .slide-content {
-  margin-left: clamp(20px, 4vw, 64px);
+  margin-left: clamp(40px, 4vw, 64px);
 }
 
 .slide-1 .slide-content,

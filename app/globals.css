@@ -1390,8 +1390,6 @@ section { padding: 70px 60px; }
 
   transition: transform 1.8s cubic-bezier(0.22, 1, 0.36, 1);
 
-  will-change: transform;
-
   overflow: hidden;
 }
 
@@ -1754,11 +1752,7 @@ section { padding: 70px 60px; }
     transform: none !important;
   }
 
-  /* Mobile perf — simplified blobs (no mix-blend-mode on low-end
-     hardware), halftone reduced, arrows hidden (swipe is primary). */
-  .blob { mix-blend-mode: normal; opacity: 0.28; animation-duration: 14s; }
-  .slide::after { display: none; }
-  body::before { background-size: 18px 18px; opacity: 0.02; }
+  /* Arrows hidden on mobile — swipe is primary. */
   .slider-arrows { display: none; }
   .slider-dots { bottom: 16px; gap: 10px; }
   .dot { width: 10px; height: 10px; } /* bigger tap target */

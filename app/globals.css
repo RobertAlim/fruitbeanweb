@@ -246,12 +246,7 @@ nav {
 
 .slide-1 .slide-content,
 .slide-2 .slide-content {
-  margin-left: clamp(20px, 4vw, 96px);
-}
-
-.slide-1 .slide-content,
-.slide-2 .slide-content {
-  margin-left: 12px;
+  margin-left: clamp(20px, 10vw, 64px);
 }
 
 /* Halftone dot overlay — static print-shop grain, replaces scanlines */
